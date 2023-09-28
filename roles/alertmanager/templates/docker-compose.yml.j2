@@ -1,0 +1,19 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+version: "3.7"
+services:
+  {{ alertmanager_name }}:
+    image: {{ alertmanager_image }}:{{ alertmanager_tag }}
+    container_name: {{ alertmanager_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - {{ service_root_path }}/{{ alertmanager_name }}:/etc/alertmanager
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+{% if docker_network_mode == "bridge" %}
+    ports:
+      - "{{ alertmanager_port }}:{{ alertmanager_port }}"
+{% endif %}
+    network_mode: {{ docker_network_mode }}
+    command: {{ alertmanager_command | list }}

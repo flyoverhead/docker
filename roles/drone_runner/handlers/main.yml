@@ -1,0 +1,31 @@
+---
+# Start drone-runner service
+- name: Start drone-runner service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ drone_runner_name }}"
+    state: present
+  register: drone_runner_service
+  retries: 5
+  delay: 10
+  until: drone_runner_service.services[drone_runner_name][drone_runner_name].state.running
+  notify:
+    - Check drone-runner service
+
+# Restart drone-runner service
+- name: Restart drone-runner service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ drone_runner_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check drone-runner service
+
+# Check drone-runner service
+- name: Check drone-runner service
+  ansible.builtin.command:
+    cmd: docker logs "{{ drone_runner_name }}"
+  register: drone_runner_status
+  failed_when: |
+    'successfully pinged the remote server' not in drone_runner_status.stderr and
+    'successfully pinged the remote server' not in drone_runner_status.stdout
+  changed_when: false

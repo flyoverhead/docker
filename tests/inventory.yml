@@ -1,0 +1,15 @@
+test:
+  children:
+    vpn_server:
+      hosts:
+        server:
+          ansible_host: "192.168.56.11"
+          ansible_port: "54781"
+    vpn_clients:
+      hosts:
+        client01:
+          ansible_host: "192.168.56.12"
+          ansible_port: "54782"
+        client02:
+          ansible_host: "192.168.56.13"
+          ansible_port: "54783"

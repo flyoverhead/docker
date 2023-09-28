@@ -1,0 +1,19 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+version: "3.7"
+services:
+  {{ prometheus_name }}:
+    image: {{ prometheus_image }}:{{ prometheus_tag }}
+    container_name: {{ prometheus_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - {{ service_root_path }}/{{ prometheus_name }}:/etc/prometheus
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+{% if docker_network_mode == "bridge" %}
+    ports:
+      - "{{ prometheus_port }}:{{ prometheus_port }}"
+{% endif %}
+    network_mode: {{ docker_network_mode }}
+    command: {{ prometheus_command | list }}

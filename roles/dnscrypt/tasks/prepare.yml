@@ -1,0 +1,26 @@
+---
+# Check running systemd services
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+# Disable avahi service to prevent port collision
+- name: Disable avahi systemd unit
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+    masked: true
+  when: "'5353' in dnscrypt_listening_port and 'avahi-daemon' in services"
+  loop: ["avahi-daemon.service", "avahi-daemon.socket"]
+
+# Configure sysctl IPv6 support
+- name: Configure sysctl IPv6 support
+  become: true
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "{% if dnscrypt_ipv6_servers %}0{% else %}1{% endif %}"
+    sysctl_set: true
+  loop: "{{ sysctl_config_ipv6 }}"
+  loop_control:
+    label: "{{ item }} value set to {% if dnscrypt_ipv6_servers %}0{% else %}1{% endif %}"

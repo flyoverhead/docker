@@ -1,0 +1,85 @@
+{
+    "log": {
+        "loglevel": "warning"
+    },
+    "routing": {
+        "domainStrategy": "IPIfNonMatch",
+        "rules": [
+            {
+                "type": "field",
+                "ip": [
+                    "geoip:ru"
+                ],
+                "outboundTag": "block"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "listen": "{{ xray_listening_address }}",
+            "port": {{ xray_listening_port }},
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+{% for xray_client in xray_clients %}
+                    {
+                        "name": "{{ xray_client.name }}",
+                        "id": "{{ xray_client.id }}",
+                        "flow": "{{ xray_server_vless_flow }}"
+{% if loop.revindex0 == 0 %}
+                    }
+{% else %}
+                    },
+{% endif %}
+{% endfor %}
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "dest": "www.microsoft.com:443",
+                    "xver": 0,
+                    "serverNames": [
+                        "microsoft.com",
+                        "www.microsoft.com"
+                    ],
+                    "privateKey": "{{ xray_private_key }}",
+                    "minClientVer": "",
+                    "maxClientVer": "",
+                    "maxTimeDiff": 0,
+                    "shortIds": [
+                        "{{ xray_sid }}"
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "block"
+        }
+    ],
+    "policy": {
+        "levels": {
+            "0": {
+                "handshake": 3,
+                "connIdle": 180
+            }
+        }
+    }
+}

@@ -1,0 +1,11 @@
+galaxy_info:
+  author: flyoverhead
+  description: Gitea docker service deployment
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+  galaxy_tags: ["docker", "services", "gitea"]
+
+dependencies: []

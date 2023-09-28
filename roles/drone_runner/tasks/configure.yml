@@ -1,0 +1,18 @@
+---
+# Create drone-runner folder
+- name: Create drone-runner folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ drone_runner_name }}"
+    state: directory
+    mode: "0755"
+
+# Create drone-runner docker-compose file
+- name: Create drone-runner docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ drone_runner_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start drone-runner service

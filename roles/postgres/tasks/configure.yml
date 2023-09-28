@@ -1,0 +1,36 @@
+---
+# Create postgres folder
+- name: Create postgres folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ postgres_name }}"
+    state: directory
+    mode: "0755"
+
+# Create postgres initdb script
+- name: Create postgres initdb script
+  become: true
+  ansible.builtin.copy:
+    src: "postgres_init.sh"
+    dest: "{{ service_root_path }}/{{ postgres_name }}/postgres_init.sh"
+    mode: "0755"
+
+# Create postgres configuration file
+- name: Create postgres configuration file
+  become: true
+  ansible.builtin.template:
+    src: "postgresql.conf.j2"
+    dest: "{{ service_root_path }}/{{ postgres_name }}/postgresql.conf"
+    mode: "0644"
+  notify:
+    - Restart postgres service
+
+# Create postgres docker-compose file
+- name: Create postgres docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ postgres_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start postgres service

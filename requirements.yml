@@ -1,0 +1,5 @@
+---
+collections:
+  - name: flyoverhead.docker
+    source: https://github.com/flyoverhead/docker-services
+    version: main

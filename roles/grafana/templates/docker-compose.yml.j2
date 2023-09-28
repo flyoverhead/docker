@@ -1,0 +1,24 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+version: "3.7"
+services:
+  {{ grafana_name }}:
+    image: {{ grafana_image }}:{{ grafana_tag }}
+    container_name: {{ grafana_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - GF_SERVER_HTTP_PORT={{ grafana_port }}
+      - GF_SECURITY_ADMIN_USER={{ grafana_admin_username }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+      - GF_INSTALL_PLUGINS={{ grafana_plugins | join(',')}}
+      - TZ={{ timezone }}
+    volumes:
+      - {{ service_root_path }}/{{ grafana_name }}/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - {{ service_root_path }}/{{ grafana_name }}/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - {{ service_root_path }}/{{ grafana_name }}/dashboards:/var/lib/grafana/dashboards
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+{% if docker_network_mode == "bridge" %}
+    ports:
+      - "{{ grafana_port }}:{{ grafana_port }}"
+{% endif %}
+    network_mode: {{ docker_network_mode }}

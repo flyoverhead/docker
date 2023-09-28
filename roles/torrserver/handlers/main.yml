@@ -1,0 +1,32 @@
+---
+# Start torrserver service
+- name: Start torrserver service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ torrserver_name }}"
+    state: present
+  register: torrserver_service
+  retries: 5
+  delay: 10
+  until: torrserver_service.services[torrserver_name][torrserver_name].state.running
+  notify:
+    - Check torrserver service
+
+# Restart torrserver service
+- name: Restart torrserver service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ torrserver_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check torrserver service
+
+# Check torrserver service
+- name: Check torrserver service
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ torrserver_port }}"
+    method: GET
+    status_code: 200
+  register: torrserver_status
+  until: torrserver_status.status == 200
+  retries: 3
+  delay: 30

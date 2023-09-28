@@ -1,0 +1,44 @@
+---
+# Service root path
+service_root_path: "/opt/docker_services"
+
+# Docker configuration
+docker_restart_policy: "always"
+docker_network_mode: "host"
+
+# Default timezone
+timezone: "Europe/Moscow"
+
+# sysctl IPv6 configuration
+sysctl_config_ipv6:
+  [
+    "net.ipv6.conf.all.disable_ipv6",
+    "net.ipv6.conf.default.disable_ipv6",
+    "net.ipv6.conf.lo.disable_ipv6",
+  ]
+
+# Dnscrypt-Proxy configuration
+# https://github.com/DNSCrypt/dnscrypt-proxy
+dnscrypt_name: "dnscrypt"
+dnscrypt_image: "klutchell/dnscrypt-proxy"
+dnscrypt_tag: "2.1.5"
+dnscrypt_listening_addresses: ["0.0.0.0"]
+dnscrypt_listening_port: "5353"
+dnscrypt_public_resolvers: []
+dnscrypt_ipv4_servers: true
+dnscrypt_ipv6_servers: false
+dnscrypt_public_servers: true
+dnscrypt_doh_servers: true
+dnscrypt_odoh_servers: true
+dnscrypt_anon_servers: true
+dnscrypt_quad_servers: true
+dnscrypt_dnssec_servers: true
+dnscrypt_nolog_servers: true
+dnscrypt_nofilter_servers: true
+dnscrypt_disabled_public_resolvers: []
+dnscrypt_upstream_servers: ["1.1.1.1", "8.8.8.8", "9.9.9.9"]
+dnscrypt_netprobe_address: "9.9.9.9"
+dnscrypt_block_unqualified: true
+dnscrypt_block_undelegated: true
+dnscrypt_dns_cache: true
+dnscrypt_dns_cache_size: "4096"

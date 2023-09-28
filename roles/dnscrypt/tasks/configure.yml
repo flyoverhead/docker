@@ -1,0 +1,28 @@
+---
+# Create dnscrypt-proxy folder
+- name: Create dnscrypt-proxy folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ dnscrypt_name }}"
+    state: directory
+    mode: "0755"
+
+# Create dnscrypt-proxy configuration file
+- name: Create dnscrypt-proxy configuration file
+  become: true
+  ansible.builtin.template:
+    src: "dnscrypt-proxy.toml.j2"
+    dest: "{{ service_root_path }}/{{ dnscrypt_name }}/dnscrypt-proxy.toml"
+    mode: "0644"
+  notify:
+    - Restart dnscrypt-proxy service
+
+# Create dnscrypt-proxy docker-compose file
+- name: Create dnscrypt-proxy docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ dnscrypt_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start dnscrypt-proxy service

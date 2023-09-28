@@ -1,0 +1,11 @@
+galaxy_info:
+  author: flyoverhead
+  description: Drone runner docker service deployment
+  license: PolyForm-Small-Business-1.0.0
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+  galaxy_tags: ["docker", "services", "drone-runner"]
+
+dependencies: []

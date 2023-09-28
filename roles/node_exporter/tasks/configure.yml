@@ -1,0 +1,18 @@
+---
+# Create node-exporter folder
+- name: Create node-exporter folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ node_exporter_name }}"
+    state: directory
+    mode: "0755"
+
+# Create node-exporter docker-compose file
+- name: Create node-exporter docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ node_exporter_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start node-exporter service

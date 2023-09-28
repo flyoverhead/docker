@@ -1,0 +1,17 @@
+---
+#jinja2: trim_blocks: True, lstrip_blocks: True
+
+global:
+  {{ prometheus_global_config | to_yaml | indent(2) }}
+
+alerting:
+  alertmanagers:
+{% if prometheus_alert_jobs is defined and prometheus_alert_jobs | length %}
+  {{ prometheus_alert_jobs | to_yaml | indent(2) }}
+
+rule_files:
+  - alerts/*.yml
+{% endif %}
+
+scrape_configs:
+  {{ prometheus_scrape_jobs | to_yaml | indent(2) }}

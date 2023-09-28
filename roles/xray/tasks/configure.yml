@@ -1,0 +1,76 @@
+---
+# Gather all required information previously saved on xray server
+- name: Gather all required information from xray server
+  delegate_to: "{{ groups['vpn_server'] | first }}"
+  run_once: true
+  block:
+    # Read xray private key file
+    - name: Read xray private key file
+      ansible.builtin.slurp:
+        src: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_private_key"
+      register: xray_private_key_encoded
+
+    # Read xray public key file
+    - name: Read xray public key file
+      ansible.builtin.slurp:
+        src: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_public_key"
+      register: xray_public_key_encoded
+
+    # Read xray sid file
+    - name: Read xray sid file
+      ansible.builtin.slurp:
+        src: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_sid"
+      register: xray_sid_encoded
+
+    # Set all gathered information as facts
+    - name: Set xray server information
+      ansible.builtin.set_fact:
+        xray_private_key: "{{ (xray_private_key_encoded.content | b64decode) | trim }}"
+        xray_public_key: "{{ (xray_public_key_encoded.content | b64decode) | trim }}"
+        xray_sid: "{{ (xray_sid_encoded.content | b64decode) | trim }}"
+        xray_server_public_address: "{{ hostvars[groups.vpn_server | first]['ansible_host'] }}"
+
+    # Clear previously cached xray_clients fact to
+    # prevent dublicates in xray server configuration
+    - name: Clear previously cached xray_clients fact
+      ansible.builtin.set_fact:
+        xray_clients: []
+
+    # Read clients list file
+    - name: Read xray clients list file
+      ansible.builtin.slurp:
+        src: "{{ service_root_path }}/{{ xray_name }}/clients/clients.yml"
+      register: xray_clients_file
+
+    # Set xray clients list as fact
+    - name: Set xray clients list fact
+      when: item is defined and item | length > 0
+      ansible.builtin.set_fact:
+        xray_clients: "{{ xray_clients | default([]) + [ item | from_yaml ] }}"
+      loop: "{{ xray_clients_file['content'] | b64decode | trim | split('\n') }}"
+
+# Create xray server config.json
+- name: Create xray server config.json
+  when: "'vpn_server' in group_names"
+  become: true
+  ansible.builtin.template:
+    src: "templates/server/{{ xray_config }}.j2"
+    dest: "{{ service_root_path }}/{{ xray_name }}/config.json"
+    mode: "0644"
+  register: result
+  notify:
+    - Restart xray service
+
+# Create xray client configuration file on online clients
+- name: Create xray client config.json
+  become: true
+  when: "'vpn_clients' in group_names and inventory_hostname in item.name"
+  ansible.builtin.template:
+    src: "templates/client/{{ xray_config }}.j2"
+    dest: "{{ service_root_path }}/{{ xray_name }}/config.json"
+    mode: "0644"
+  loop: "{{ xray_clients }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify:
+    - Restart xray service

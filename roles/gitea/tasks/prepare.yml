@@ -1,0 +1,58 @@
+---
+# Configure ssh access
+# https://docs.gitea.io/en-us/installation/install-with-docker/#docker-shell-with-authorizedkeyscommand
+- name: Configure git ssh access
+  block:
+    # Create git group
+    - name: Create git group
+      become: true
+      ansible.builtin.group:
+        name: "git"
+        gid: "{{ gitea_git_gid }}"
+        state: present
+
+    # Create git user to enable ssh access
+    - name: Create git user
+      become: true
+      ansible.builtin.user:
+        name: "git"
+        uid: "{{ gitea_git_uid }}"
+        group: "git"
+        state: present
+        create_home: true
+
+    # Add git user to docker group
+    - name: Add git user to docker group
+      become: true
+      ansible.builtin.user:
+        name: "git"
+        groups: "{{ docker_group }}"
+        append: true
+      notify:
+        - Reload groups
+
+    # Modify git user shell
+    - name: Modify git user shell
+      become: true
+      ansible.builtin.copy:
+        content: |
+          #!/bin/sh
+          /usr/bin/docker exec -i --env SSH_ORIGINAL_COMMAND="$SSH_ORIGINAL_COMMAND" {{ gitea_name }} sh "$@"
+        dest: "/home/git/docker-shell"
+        owner: "git"
+        group: "git"
+        mode: "0755"
+        force: true
+
+    # Add git user authorized keys command
+    - name: Add git user authorized keys command
+      become: true
+      ansible.builtin.blockinfile:
+        path: "/etc/ssh/sshd_config"
+        block: |
+          Match User git
+            AuthorizedKeysCommandUser git
+            AuthorizedKeysCommand /usr/bin/docker exec -i {{ gitea_name }} /usr/local/bin/gitea keys -c /data/gitea/conf/app.ini -e git -u %u -t %t -k %k
+        mode: "0644"
+      notify:
+        - Restart sshd service

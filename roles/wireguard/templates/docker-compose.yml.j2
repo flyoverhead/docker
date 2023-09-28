@@ -1,0 +1,26 @@
+version: "3.7"
+services:
+  {{ wireguard_name }}:
+    image: {{ wireguard_image }}:{{ wireguard_tag }}
+    container_name: {{ wireguard_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - TZ={{ timezone }}
+{% if 'vpn_server' in group_names %}
+      - SERVERURL={{ wireguard_server_address }}
+      - SERVERPORT={{ wireguard_server_port }}
+      - PEERS={{ wireguard_peers | join(',') }}
+      - INTERNAL_SUBNET={{ wireguard_internal_subnet }}
+      - ALLOWEDIPS={{ wireguard_allowed_ips | join(',') }}
+      - PERSISTENTKEEPALIVE_PEERS=all
+      - LOG_CONFS=false
+{% endif %}
+    volumes:
+      - {{ service_root_path }}/{{ wireguard_name }}/config:/config
+      - /lib/modules:/lib/modules
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE

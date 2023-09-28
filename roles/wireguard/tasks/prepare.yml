@@ -1,0 +1,18 @@
+---
+# Include the fwmark of the packet in reverse path route lookup
+- name: Configure sysctl
+  become: true
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "1"
+    sysctl_set: true
+  loop:
+    - "net.ipv4.conf.all.src_valid_mark"
+
+# Create wireguard folder
+- name: Create wireguard folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ wireguard_name }}/config"
+    state: directory
+    mode: "0755"

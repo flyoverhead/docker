@@ -1,0 +1,25 @@
+---
+# Service root path
+service_root_path: "/opt/docker_services"
+
+# Docker configuration
+docker_restart_policy: "always"
+docker_network_mode: "host"
+
+# Default timezone
+timezone: "Europe/Moscow"
+
+# Drone runner configuration
+# https://docs.drone.io/runner/docker/overview/
+# https://hub.docker.com/r/drone/drone-runner-docker
+drone_runner_name: "drone-runner"
+drone_runner_image: "drone/drone-runner-docker"
+drone_runner_tag: "1.8.3"
+drone_runner_proto: "http"
+drone_runner_host: "{{ ansible_host }}"
+drone_runner_port: "8010"
+drone_runner_rpc_proto: "{{ drone_server_proto }}"
+drone_runner_rpc_host: "{{ drone_server_host }}:{{ drone_server_port }}"
+drone_runner_rpc_secret: "{{ drone_rpc_secret }}"
+drone_runner_username: "drone"
+drone_runner_password: "drone"

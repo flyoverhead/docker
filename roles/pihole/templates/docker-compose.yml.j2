@@ -1,0 +1,28 @@
+version: "3.7"
+services:
+  {{ pihole_name }}:
+    image: {{ pihole_image }}:{{ pihole_tag }}
+    container_name: {{ pihole_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - FTLCONF_LOCAL_IPV4={{ ansible_host }}
+      - WEB_PORT={{ pihole_web_port }}
+      - PIHOLE_DNS_={{ pihole_upstream_dns | join(';') }}
+      - DNSMASQ_LISTENING={{ pihole_dnsmasq_listening_address }}
+      - WEBPASSWORD={{ pihole_web_password }}
+      - DNSSEC={{ pihole_dnssec }}
+      - QUERY_LOGGING={{ pihole_query_logging }}
+      - DNS_BOGUS_PRIV={{ pihole_dns_bogus_priv }}
+      - DNS_FQDN_REQUIRED={{ pihole_dns_fqdn_required }}
+      - WEBTHEME={{ pihole_web_theme }}
+      - IPv6={{ pihole_ipv6_support }}
+      - TZ={{ timezone }}
+    volumes:
+      - {{ service_root_path }}/{{ pihole_name }}/data:/etc/pihole
+      - {{ service_root_path }}/{{ pihole_name }}/dnsmasq.d/data:/etc/dnsmasq.d
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - CAP_CHOWN

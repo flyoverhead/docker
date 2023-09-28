@@ -1,0 +1,114 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'yaml'
+
+current_dir   = File.dirname(File.expand_path(__FILE__))
+inventory     = YAML.load_file("#{current_dir}/inventory.yml")
+host_ip_01       = inventory['test']['children']['vpn_server']['hosts']['server']['ansible_host']
+host_ssh_port_01 = inventory['test']['children']['vpn_server']['hosts']['server']['ansible_port']
+host_ip_02       = inventory['test']['children']['vpn_clients']['hosts']['client01']['ansible_host']
+host_ssh_port_02 = inventory['test']['children']['vpn_clients']['hosts']['client01']['ansible_port']
+host_ip_03       = inventory['test']['children']['vpn_clients']['hosts']['client02']['ansible_host']
+host_ssh_port_03 = inventory['test']['children']['vpn_clients']['hosts']['client02']['ansible_port']
+
+boxes = {
+  "server" => {
+    :hostname => "server",
+    :ip       => "#{host_ip_01}",
+    :cpus     => "2",
+    :memory   => "2048",
+    :ports    => {
+      "443"   => 443,
+      "5353"  => 5353,
+      "5432"  => 5432,
+      "6969"  => 6969,
+      "8000"  => 8000,
+      "8010"  => 8010,
+      "8020"  => 8020,
+      "8030"  => 8030,
+      "8040"  => 8040,
+      "8041"  => 8041,
+      "8050"  => 8050,
+      "8060"  => 8060,
+      "8070"  => 8070,
+      "8080"  => 8080,
+      "9090"  => 9090,
+      "9093"  => 9093,
+      "9100"  => 9100,
+      "51820" => 51820,
+      "#{host_ssh_port_01}" => "#{host_ssh_port_01}",
+    },
+  },
+  "client_01" => {
+    :hostname => "client",
+    :ip       => "#{host_ip_02}",
+    :cpus     => "2",
+    :memory   => "2048",
+    :ports    => {
+      "#{host_ssh_port_02}" => "#{host_ssh_port_02}",
+    }
+  },
+  "client_02" => {
+    :hostname => "client",
+    :ip       => "#{host_ip_03}",
+    :cpus     => "2",
+    :memory   => "2048",
+    :ports    => {
+      "#{host_ssh_port_03}" => "#{host_ssh_port_03}",
+    }
+  },
+}
+
+bullseye_sources = <<-'BULLSEYE_SOURCES'
+deb http://deb.debian.org/debian bullseye main contrib non-free
+deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free
+deb http://deb.debian.org/debian bullseye-updates main contrib non-free
+BULLSEYE_SOURCES
+
+bookworm_sources = <<-'BOOKWORM_SOURCES'
+deb http://deb.debian.org/debian bookworm contrib main non-free-firmware
+deb http://deb.debian.org/debian bookworm-updates contrib main non-free-firmware
+deb http://deb.debian.org/debian bookworm-backports contrib main non-free-firmware
+deb http://deb.debian.org/debian-security bookworm-security contrib main non-free-firmware
+BOOKWORM_SOURCES
+
+Vagrant.configure(2) do |config|
+  vm_provider = ENV["VAGRANT_PROVIDER"] || "vmware_fusion"
+  case vm_provider
+    when "virtualbox"
+      config.vm.box = "debian/bullseye64"
+    when "vmware_fusion"
+      config.vm.box = "bento/debian-12-arm64"
+  end
+  boxes.each do |hostname, cfg|
+    default = if hostname == "server" then true else false end
+    config.vm.define hostname, primary: default do |config|
+      config.vm.hostname = cfg[:hostname]
+      config.vm.provider vm_provider do |v|
+        if vm_provider == "vmware_fusion"
+          # v.gui = true
+          v.vmx["ethernet0.virtualdev"] = "vmxnet3"
+          v.ssh_info_public = true
+          v.linked_clone = false
+        end
+        v.cpus = cfg[:cpus]
+        v.memory = cfg[:memory]
+      end
+      config.vm.network "private_network", ip: cfg[:ip]
+      (cfg[:ports]).each do |guest, host|
+        config.vm.network "forwarded_port", host: "#{host}", guest: "#{guest}"
+      end
+      config.vm.synced_folder ".", "/vagrant"
+      if config.vm.box == "debian/bullseye64"
+        config.vm.provision "shell", inline: "echo \"#{bullseye_sources}\" > /etc/apt/sources.list"
+      else
+        config.vm.provision "shell", inline: "echo \"#{bookworm_sources}\" > /etc/apt/sources.list"
+      end
+    end
+  end
+  if ARGV[0] == "up" then
+    config.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "/home/vagrant/.ssh/id_rsa.pub"
+    config.vm.provision "shell", inline: "cat /home/vagrant/.ssh/id_rsa.pub >> /home/vagrant/.ssh/authorized_keys"
+  end
+end

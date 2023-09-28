@@ -1,0 +1,17 @@
+---
+# Service root path
+service_root_path: "/opt/docker_services"
+
+# Docker configuration
+docker_restart_policy: "always"
+
+# Default timezone
+timezone: "Europe/Moscow"
+
+# Torrserver configuration
+# https://github.com/YouROK/TorrServer
+# https://hub.docker.com/r/ksey/torrserver
+torrserver_name: "torrserver"
+torrserver_image: "ksey/torrserver"
+torrserver_tag: "latest"
+torrserver_port: "8070"

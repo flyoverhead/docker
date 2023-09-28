@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  {{ torrserver_name }}:
+    image: {{ torrserver_image }}:{{ torrserver_tag }}
+    container_name: {{ torrserver_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - TS_PORT={{ torrserver_port }}
+      - TZ={{ timezone }}
+    volumes:
+      - {{ service_root_path }}/{{ torrserver_name }}/db:/TS/db
+    network_mode: host
+    shm_size: 256m

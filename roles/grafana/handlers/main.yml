@@ -1,0 +1,32 @@
+---
+# Start grafana service
+- name: Start grafana service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ grafana_name }}"
+    state: present
+  register: grafana_service
+  retries: 5
+  delay: 10
+  until: grafana_service.services[grafana_name][grafana_name].state.running
+  notify:
+    - Check grafana service
+
+# Restart grafana service
+- name: Restart grafana service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ grafana_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check grafana service
+
+# Check grafana service
+- name: Check grafana service
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ grafana_port }}"
+    method: GET
+    status_code: 200
+  register: grafana_status
+  until: grafana_status.status == 200
+  retries: 3
+  delay: 30

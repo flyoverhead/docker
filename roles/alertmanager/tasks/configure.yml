@@ -1,0 +1,42 @@
+---
+# Create alertmanager folder
+- name: Create alertmanager folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ alertmanager_name }}/templates"
+    state: directory
+    mode: "0755"
+
+# Create alertmanager configuration file
+- name: Create alertmanager configuration file
+  become: true
+  ansible.builtin.template:
+    src: "alertmanager.yml.j2"
+    dest: "{{ service_root_path }}/{{ alertmanager_name }}/alertmanager.yml"
+    mode: "0644"
+  notify:
+    - Restart alertmanager service
+
+# Create alertmanager message template files
+- name: Create alertmanager message template files
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ service_root_path }}/{{ alertmanager_name }}/templates/{{ item | basename }}"
+    mode: "0644"
+  with_fileglob:
+    - "*.tmpl"
+  loop_control:
+    label: "{{ item | basename }}"
+  notify:
+    - Restart alertmanager service
+
+# Create alertmanager docker-compose file
+- name: Create alertmanager docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ alertmanager_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start alertmanager service

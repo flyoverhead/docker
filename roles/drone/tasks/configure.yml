@@ -1,0 +1,88 @@
+---
+# Create drone folder
+- name: Create drone folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ drone_name }}"
+    state: directory
+    mode: "0755"
+
+# Check for already created drone application in gitea service
+- name: Check gitea applications
+  ansible.builtin.uri:
+    url: "{{ drone_gitea_server }}/api/v1/user/applications/oauth2"
+    method: GET
+    headers:
+      Authorization: token {{ gitea_api_token }}
+      Content-Type: application/json
+    body_format: json
+    status_code: 200
+  register: gitea_app_list
+
+- name: Set drone application fact
+  when: drone_name in item
+  ansible.builtin.set_fact:
+    drone_app_status: true
+  loop: "{{ gitea_app_list | community.general.json_query('json[*].name') }}"
+
+- name: Check drone application
+  ansible.builtin.set_fact:
+    drone_app_exists: "{{ drone_app_status | default('false') | bool }}"
+
+# Create drone application and save secrets
+- name: Create drone application and save secrets
+  when: not drone_app_exists
+  block:
+    # Create drone application in gitea service
+    - name: Create drone application
+      ansible.builtin.uri:
+        url: "{{ drone_gitea_server }}/api/v1/user/applications/oauth2"
+        method: POST
+        headers:
+          Authorization: token {{ gitea_api_token }}
+          Content-Type: application/json
+        body:
+          confidential_client: true
+          name: "{{ drone_name }}"
+          redirect_uris:
+            [
+              "{{ drone_server_proto }}://{{ drone_server_host }}:{{ drone_server_port }}/login",
+            ]
+        body_format: json
+        status_code: 201
+      register: drone_secrets
+
+    # Save drone application secrets
+    - name: Save drone application secrets
+      become: true
+      ansible.builtin.lineinfile:
+        path: "{{ service_root_path }}/{{ drone_name }}/gitea_drone_client_secrets"
+        line: "{{ item }}"
+        mode: "0644"
+        create: true
+      loop:
+        - "{{ drone_secrets.json.client_id | trim }}"
+        - "{{ drone_secrets.json.client_secret | trim }}"
+      no_log: true
+
+# Get drone application secrets
+- name: Get drone application secrets
+  ansible.builtin.slurp:
+    src: "{{ service_root_path }}/{{ drone_name }}/gitea_drone_client_secrets"
+  register: drone_secrets_encoded
+
+# Set drone application secrets
+- name: Set drone application secrets
+  ansible.builtin.set_fact:
+    drone_gitea_client_id: "{{ (drone_secrets_encoded.content | b64decode).split('\n').0 | trim }}"
+    drone_gitea_client_secret: "{{ (drone_secrets_encoded.content | b64decode).split('\n').1 | trim }}"
+
+# Create drone docker-compose file
+- name: Create drone docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ drone_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start drone service

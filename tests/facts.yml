@@ -1,0 +1,19 @@
+---
+- name: Set os distributive
+  ansible.builtin.set_fact:
+    os_distro: "{{ ansible_distribution | lower }}"
+
+- name: Set os release
+  ansible.builtin.set_fact:
+    os_release: "{{ ansible_distribution_release | lower }}"
+
+- name: Set package architecture
+  ansible.builtin.set_fact:
+    arch: |-
+      {%- if ansible_architecture == 'x86_64' -%}
+      amd64
+      {%- elif ansible_architecture == 'aarch64' -%}
+      arm64
+      {%- elif ansible_architecture == 'armv7l' -%}
+      armhf
+      {%- endif -%}

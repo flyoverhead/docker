@@ -1,0 +1,32 @@
+---
+# Start drone service
+- name: Start drone service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ drone_name }}"
+    state: present
+  register: drone_service
+  retries: 5
+  delay: 10
+  until: drone_service.services[drone_name][drone_name].state.running
+  notify:
+    - Check drone service
+
+# Restart drone service
+- name: Restart drone service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ drone_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check drone service
+
+# Check drone service
+- name: Check drone service
+  ansible.builtin.uri:
+    url: "http://{{ drone_server_host }}:{{ drone_server_port }}"
+    method: GET
+    status_code: 200
+  register: drone_status
+  until: drone_status.status == 200
+  retries: 3
+  delay: 30

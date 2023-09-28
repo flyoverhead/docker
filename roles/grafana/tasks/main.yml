@@ -1,0 +1,20 @@
+---
+# Check current grafana service if exists
+- name: Check grafana container
+  community.docker.docker_container_info:
+    name: "{{ grafana_name }}"
+  register: grafana_service
+  changed_when: >
+    not grafana_service.exists or
+    grafana_tag not in grafana_service.container.Config.Image
+  failed_when: grafana_service.exists and grafana_service.container.State.ExitCode != 0
+  notify:
+    - Start grafana service
+
+# Configure grafana service
+- name: Configure grafana service
+  ansible.builtin.include_tasks: configure.yml
+
+# Deploy grafana service
+- name: Deploy grafana service
+  ansible.builtin.meta: flush_handlers

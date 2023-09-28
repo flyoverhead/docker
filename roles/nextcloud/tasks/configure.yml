@@ -1,0 +1,22 @@
+---
+# Create nextcloud folder
+- name: Create nextcloud folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ nextcloud_name }}"
+    state: directory
+    mode: "0755"
+
+# Create nextcloud docker-compose file
+- name: Create nextcloud docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ nextcloud_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start nextcloud service
+
+# Start nextcloud service
+- name: Start nextcloud service
+  ansible.builtin.meta: flush_handlers

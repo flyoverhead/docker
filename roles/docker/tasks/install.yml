@@ -1,0 +1,49 @@
+---
+# Add docker repository
+- name: Add docker repository
+  when: docker_add_repo
+  block:
+    # Create apt keyrings directory
+    - name: Create apt keyrings directory
+      become: true
+      ansible.builtin.file:
+        path: "/etc/apt/keyrings"
+        state: directory
+        mode: "0755"
+
+    # Install docker dependencies
+    - name: Install docker dependencies
+      become: true
+      ansible.builtin.apt:
+        name: "{{ docker_required_packages }}"
+        state: present
+        update_cache: true
+
+    # Install docker repository key
+    - name: Add docker repository key
+      become: true
+      ansible.builtin.get_url:
+        url: "{{ docker_mirror }}{{ docker_gpg_key }}"
+        dest: "/etc/apt/keyrings/docker.asc"
+        mode: "0644"
+        force: true
+      when: docker_add_repo
+
+    # Add docker sources list
+    - name: Add docker sources list
+      become: true
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ arch }}{{ docker_gpg_check | ternary('', ' trusted=yes') }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          {{ docker_mirror }}{{ docker_apt_repo }}
+        filename: "docker"
+        state: present
+      when: docker_add_repo
+
+# Install docker packages
+- name: Install docker packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present

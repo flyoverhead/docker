@@ -1,0 +1,36 @@
+---
+# Service root path
+service_root_path: "/opt/docker_services"
+
+# Docker configuration
+docker_restart_policy: "always"
+docker_network_mode: "host"
+
+# Default timezone
+timezone: "Europe/Moscow"
+
+# Prometheus configuration
+# https://prometheus.io/docs/alerting/latest/alertmanager/
+# https://hub.docker.com/r/prom/alertmanager
+alertmanager_name: "alertmanager"
+alertmanager_image: "prom/alertmanager"
+alertmanager_tag: "v0.26.0"
+alertmanager_port: "9093"
+alertmanager_command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+alertmanager_global_config:
+  resolve_timeout: "5m"
+alertmanager_route_config:
+  group_wait: "10s"
+  group_interval: "10m"
+  repeat_interval: "60m"
+  group_by: ["alertname"]
+  receiver: "telegram"
+alertmanager_receivers_config:
+  - name: "telegram"
+    telegram_configs:
+      - send_resolved: true
+        api_url: "https://api.telegram.org"
+        bot_token: ""
+        chat_id:
+        message: '{% raw %}{{ template "telegram.custom.message" . }}{% endraw %}'
+        parse_mode: "Markdown"

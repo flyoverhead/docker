@@ -1,0 +1,75 @@
+---
+# Install pihole required packages
+- name: Install pihole required packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ pihole_required_packages }}"
+
+# Check running systemd services
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+# Disable system stub resolver
+- name: Disable systemd-resolved stub resolver
+  become: true
+  when: "'systemd-resolved.service' in services"
+  ansible.builtin.lineinfile:
+    path: "/etc/systemd/resolved.conf"
+    regexp: "^#DNSStubListener="
+    line: "DNSStubListener=no"
+  notify:
+    - Restart systemd-resolved service
+
+- name: Disable dnsmasq systemd service
+  become: true
+  ansible.builtin.systemd:
+    name: dnsmasq.service
+    state: stopped
+    enabled: false
+    masked: true
+  when: "'dnsmasq.service' in services"
+
+# Restart systemd-resolved service
+- name: Restart systemd-resolved service
+  ansible.builtin.meta: flush_handlers
+
+# Configure sysctl IPv6 support
+- name: Configure sysctl IPv6 support
+  become: true
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "{% if pihole_ipv6_support %}0{% else %}1{% endif %}"
+    sysctl_set: true
+  loop: "{{ sysctl_config_ipv6 }}"
+  loop_control:
+    label: "{{ item }} value set to {% if pihole_ipv6_support %}0{% else %}1{% endif %}"
+
+# Create pihole folder
+- name: Create pihole folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ pihole_name }}"
+    state: directory
+    mode: "0755"
+
+# Create pihole persistent data directory
+- name: Create pihole persistent data directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ pihole_name }}/data"
+    state: directory
+    mode: "0755"
+  register: pihole_data_dir_result
+  changed_when: pihole_data_dir_result.uid != 999
+
+# Create pihole docker-compose file
+- name: Create pihole docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ pihole_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start pihole service

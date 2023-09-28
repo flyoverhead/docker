@@ -1,0 +1,34 @@
+---
+# Start dnscrypt-proxy service
+- name: Start dnscrypt-proxy service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ dnscrypt_name }}"
+    state: present
+  register: dnscrypt_service
+  retries: 5
+  delay: 10
+  until: dnscrypt_service.services[dnscrypt_name][dnscrypt_name].state.running
+  notify:
+    - Check dnscrypt-proxy service
+
+# Restart dnscrypt-proxy service
+- name: Restart dnscrypt-proxy service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ dnscrypt_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check dnscrypt-proxy service
+
+# Check dnscrypt-proxy service
+- name: Check dnscrypt-proxy service
+  community.docker.docker_container_exec:
+    container: "{{ dnscrypt_name }}"
+    command: "dnscrypt-proxy -config /config/dnscrypt-proxy.toml -check"
+    user: "nobody"
+  register: dnscrypt_status
+  retries: 3
+  delay: 30
+  until: |
+    'Configuration successfully checked' in dnscrypt_status.stdout or
+    'Configuration successfully checked' in dnscrypt_status.stderr

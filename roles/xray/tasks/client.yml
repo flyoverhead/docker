@@ -1,0 +1,42 @@
+---
+# Check if client is already configured
+- name: Check for already configured xray client {{ xray_client_item }}
+  ansible.builtin.set_fact:
+    xray_client_exist: true
+  loop: "{{ xray_clients }}"
+  when: >
+    item is defined and
+    item | type_debug == "dict" and
+    xray_client_item in item.name
+
+# Generate secret for new client if it doesn't exist in current clients list
+- name: Configure new xray client {{ xray_client_item }}
+  when: xray_client_exist is undefined or not xray_client_exist
+  block:
+    # Generate xray client UUID
+    - name: Generate xray client uuid
+      become: true
+      community.docker.docker_container:
+        name: "{{ xray_name }}"
+        image: "{{ xray_image }}:{{ xray_tag }}"
+        cleanup: true
+        command: "xray uuid"
+        detach: false
+      register: xray_client_uuid_output
+
+    # Set xray client UUID fact
+    - name: Set xray client uuid fact
+      ansible.builtin.set_fact:
+        xray_client_uuid: "{{ xray_client_uuid_output.container.Output | trim }}"
+
+    # Save newly generated client to clients list file for future comparsion
+    - name: Add xray client to server clients list file
+      become: true
+      when: "'vpn_server' in group_names"
+      ansible.builtin.lineinfile:
+        path: "{{ service_root_path }}/{{ xray_name }}/clients/clients.yml"
+        line: "{ 'name': {{ xray_client_item }}, 'id': {{ xray_client_uuid }} }"
+        insertbefore: "BOF"
+        state: "present"
+        create: true
+      no_log: true

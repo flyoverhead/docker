@@ -1,0 +1,16 @@
+---
+# Configure pihole service
+- name: Configure pihole service
+  ansible.builtin.include_tasks: configure.yml
+
+# Deploy pihole service
+- name: Deploy pihole service
+  ansible.builtin.meta: flush_handlers
+
+# Configure pihole service
+- name: Configure pihole database
+  ansible.builtin.include_tasks: database.yml
+
+# Configure pihole service
+- name: Configure pihole database
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,31 @@
+---
+# Start postgres service
+- name: Start postgres service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ postgres_name }}"
+    state: present
+  register: postgres_service
+  retries: 5
+  delay: 10
+  until: postgres_service.services[postgres_name][postgres_name].state.running
+  notify:
+    - Check postgres service
+
+# Restart postgres service
+- name: Restart postgres service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ postgres_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check postgres service
+
+# Check postgres service
+- name: Check postgres service
+  community.docker.docker_container_exec:
+    container: "{{ postgres_name }}"
+    command: "sh -c 'pg_isready -U {{ postgres_username }} -d {{ postgres_database }}'"
+  register: postgres_status
+  retries: 3
+  delay: 30
+  until: postgres_status.rc == 0

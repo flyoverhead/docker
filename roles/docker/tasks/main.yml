@@ -1,0 +1,29 @@
+---
+# Check docker service status
+- name: Check docker status
+  ansible.builtin.command:
+    cmd: "docker --version"
+  register: docker_status
+  failed_when: docker_status.rc > 0 and docker_status.rc != 2
+  changed_when: docker_status.rc != 0
+
+# Install and configure docker
+- name: Install and configure docker
+  ansible.builtin.include_tasks: install.yml
+  when: docker_status.rc != 0
+
+# Add users to docker group
+- name: Add users to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ docker_group }}"
+    append: true
+  loop: "{{ docker_users }}"
+  notify:
+    - Reload groups
+    - Enable and start docker service
+
+# Enable and start docker service
+- name: Enable and start docker service
+  ansible.builtin.meta: flush_handlers

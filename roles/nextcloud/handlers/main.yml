@@ -1,0 +1,32 @@
+---
+# Start nextcloud service
+- name: Start nextcloud service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ nextcloud_name }}"
+    state: present
+  register: nextcloud_service
+  retries: 5
+  delay: 10
+  until: nextcloud_service.services[nextcloud_name][nextcloud_name].state.running
+  notify:
+    - Check nextcloud service
+
+# Restart nextcloud service
+- name: Restart nextcloud service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ nextcloud_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check nextcloud service
+
+# Check nextcloud service
+- name: Check nextcloud service
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ nextcloud_web_port }}"
+    method: GET
+    status_code: 200
+  register: nextcloud_status
+  until: nextcloud_status.status == 200
+  retries: 3
+  delay: 30

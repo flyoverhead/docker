@@ -1,0 +1,74 @@
+---
+# Create xray folder
+- name: Create xray folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ service_root_path }}/{{ xray_name }}"
+    state: directory
+    mode: "0755"
+
+# Create xray docker-compose file
+- name: Create xray docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ service_root_path }}/{{ xray_name }}/docker-compose.yml"
+    mode: "0644"
+  notify:
+    - Start xray service
+
+# Configure xray server
+- name: Configure xray server
+  when: "'vpn_server' in group_names"
+  block:
+    # Create directories for server and clients configuration files
+    # Create credentials folder for keeping xray server credentials
+    - name: Create credentials directory
+      become: true
+      ansible.builtin.file:
+        path: "{{ service_root_path }}/{{ xray_name }}/credentials"
+        state: "directory"
+        mode: "0755"
+
+    # Create clients folder for keeping xray clients configurations
+    - name: Create clients directory
+      become: true
+      ansible.builtin.file:
+        path: "{{ service_root_path }}/{{ xray_name }}/clients"
+        state: "directory"
+        mode: "0755"
+
+    # Create clients list file for keeping xray clients credentials
+    - name: Create clients list file
+      become: true
+      ansible.builtin.file:
+        path: "{{ service_root_path }}/{{ xray_name }}/clients/clients.yml"
+        state: "touch"
+        mode: "0644"
+      register: client_list_file_result
+      changed_when: "'absent' in client_list_file_result.diff.before.state"
+
+    # Read clients list file
+    - name: Read xray clients list file
+      ansible.builtin.slurp:
+        src: "{{ service_root_path }}/{{ xray_name }}/clients/clients.yml"
+      register: xray_clients_file
+
+    # Set xray clients list as fact
+    - name: Set xray clients list fact
+      when: item is defined and item | length > 0
+      ansible.builtin.set_fact:
+        xray_clients: "{{ xray_clients | default([]) + [ item | from_yaml ] }}"
+      loop: "{{ xray_clients_file['content'] | b64decode | trim | split('\n') }}"
+
+    # Generate private and public keys, sid and clients list file on xray server
+    - name: Generate xray server secrets
+      ansible.builtin.include_tasks: server.yml
+
+    # Check for previously generated clients and generate new
+    # ones if xray_clients_list variable has been increased
+    - name: Generate xray client secrets
+      ansible.builtin.include_tasks: client.yml
+      loop: "{{ xray_clients_list }}"
+      loop_control:
+        loop_var: xray_client_item

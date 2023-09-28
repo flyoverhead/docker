@@ -1,0 +1,85 @@
+---
+# Set custom ssh port fact
+- name: Set custom ssh port fact
+  ansible.builtin.set_fact:
+    ssh_port: "{{ ansible_port }}"
+
+# Check SSH port on default 22
+- name: Check default ssh port 22
+  ansible.builtin.wait_for:
+    port: 22
+    state: "started"
+    host: "{{ ansible_host }}"
+    connect_timeout: "5"
+    timeout: "10"
+  delegate_to: "localhost"
+  register: default_ssh_port
+  failed_when: >
+    default_ssh_port.msg is defined and
+    'Timeout when waiting' not in default_ssh_port.msg and
+    default_ssh_port.failed
+
+# Set SSH port to default 22
+- name: Set ssh port to default 22
+  ansible.builtin.set_fact:
+    ansible_port: 22
+  when: >
+    default_ssh_port is defined and
+    default_ssh_port.state is defined and
+    default_ssh_port.state == "started"
+
+# Check custom SSH port
+- name: Check custom ssh port {{ ssh_port }}
+  ansible.builtin.wait_for:
+    port: "{{ ssh_port | int }}"
+    state: "started"
+    host: "{{ ansible_host }}"
+    connect_timeout: "5"
+    timeout: "10"
+  delegate_to: "localhost"
+  register: custom_ssh_port
+  failed_when: >
+    custom_ssh_port.msg is defined and
+    'Timeout when waiting' not in custom_ssh_port.msg and
+    custom_ssh_port.failed
+  when: >
+    default_ssh_port is defined and
+    default_ssh_port.state is undefined
+
+# Set SSH port to custom
+- name: Set ssh port to custom {{ ssh_port }}
+  ansible.builtin.set_fact:
+    ansible_port: "{{ ssh_port | int }}"
+  when: >
+    custom_ssh_port.state is defined and
+    custom_ssh_port.state == "started"
+
+# Configure SSH with custom port
+- name: Configure ssh access with port {{ ssh_port }}
+  become: true
+  ansible.builtin.lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "^#Port"
+    line: "Port {{ ssh_port }}"
+    state: present
+  when: >
+    ssh_port != ansible_port and
+    custom_ssh_port is defined and
+    custom_ssh_port.state is undefined
+  notify:
+    - Restart ssh service
+    - Set ssh port to custom
+
+# Restrict SSH access
+- name: Restrict ssh access
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#{{ item }}"
+    line: "{{ item }} no"
+    state: present
+  loop:
+    - "PasswordAuthentication"
+    - "PermitRootLogin"
+  notify:
+    - Restart ssh service

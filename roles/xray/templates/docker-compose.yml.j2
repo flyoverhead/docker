@@ -1,0 +1,17 @@
+version: "3.7"
+services:
+  {{ xray_name }}:
+    image: {{ xray_image }}:{{ xray_tag }}
+    container_name: {{ xray_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - {{ service_root_path }}/{{ xray_name }}/config.json:/etc/xray/config.json
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+{% if docker_network_mode == "bridge" %}
+    ports:
+      - "{{ xray_port }}:{{ xray_port }}"
+{% endif %}
+    network_mode: {{ docker_network_mode }}

@@ -1,0 +1,32 @@
+---
+# Start alertmanager service
+- name: Start alertmanager service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ alertmanager_name }}"
+    state: present
+  register: alertmanager_service
+  retries: 5
+  delay: 10
+  until: alertmanager_service.services[alertmanager_name][alertmanager_name].state.running
+  notify:
+    - Check alertmanager service
+
+# Restart alertmanager service
+- name: Restart alertmanager service
+  community.docker.docker_compose:
+    project_src: "{{ service_root_path }}/{{ alertmanager_name }}"
+    state: present
+    restarted: true
+  notify:
+    - Check alertmanager service
+
+# Check alertmanager service
+- name: Check alertmanager service
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ alertmanager_port }}"
+    method: GET
+    status_code: 200
+  register: alertmanager_status
+  until: alertmanager_status.status == 200
+  retries: 3
+  delay: 30

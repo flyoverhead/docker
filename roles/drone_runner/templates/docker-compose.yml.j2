@@ -1,0 +1,27 @@
+version: "3.7"
+services:
+  {{ drone_runner_name }}:
+    image: {{ drone_runner_image }}:{{ drone_runner_tag }}
+    container_name: {{ drone_runner_name }}
+    restart: {{ docker_restart_policy }}
+    environment:
+      - DRONE_RPC_PROTO={{ drone_runner_rpc_proto }}
+      - DRONE_RPC_HOST={{ drone_runner_rpc_host }}
+      - DRONE_RPC_SECRET={{ drone_runner_rpc_secret }}
+      - DRONE_RUNNER_CAPACITY=2
+      - DRONE_RUNNER_NAME={{ drone_runner_name }}
+      - DRONE_HTTP_PROTO={{ drone_runner_proto }}
+      - DRONE_HTTP_HOST={{ drone_runner_host }}:{{ drone_runner_port }}
+      - DRONE_HTTP_BIND=:{{ drone_runner_port }}
+      - DRONE_UI_USERNAME={{ drone_runner_username }}
+      - DRONE_UI_PASSWORD={{ drone_runner_password }}
+      - TZ={{ timezone }}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+{% if docker_network_mode == "bridge" %}
+    ports:
+      - "{{ drone_runner_port }}:{{ drone_runner_port }}"
+{% endif %}
+    network_mode: {{ docker_network_mode }}

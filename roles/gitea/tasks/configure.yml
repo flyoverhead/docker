@@ -1,0 +1,119 @@
+---
+# Check for already created gitea admin API token
+- name: Check gitea admin api token
+  ansible.builtin.stat:
+    path: "{{ service_root_path }}/{{ gitea_name }}/admin_api_token"
+  register: gitea_admin_api_token_file
+
+# Set gitea admin API token fact
+- name: Set gitea admin api token fact
+  when: gitea_admin_api_token_file.stat.exists
+  block:
+    # Get existed gitea secrets
+    - name: Get gitea admin api token
+      ansible.builtin.slurp:
+        src: "{{ service_root_path }}/{{ gitea_name }}/admin_api_token"
+      register: gitea_secrets_encoded
+
+    # Set existed gitea secrets
+    - name: Set gitea admin api token
+      when: >
+        gitea_secrets_encoded is defined and
+        gitea_secrets_encoded | length > 0
+      ansible.builtin.set_fact:
+        gitea_api_token: "{{ (gitea_secrets_encoded.content | b64decode) | trim }}"
+
+# Check for already created gitea admin
+- name: Check for already created gitea admin
+  when: >
+    gitea_api_token is defined and
+    gitea_api_token | length > 0
+  block:
+    - name: Check gitea admin status
+      ansible.builtin.uri:
+        url: "{{ drone_gitea_server }}/api/v1/users/search?q={{ gitea_admin_username }}"
+        method: GET
+        headers:
+          Authorization: token {{ gitea_api_token }}
+          Content-Type: application/json
+        body_format: json
+        status_code: 200
+      register: gitea_admin_status
+
+    - name: Set gitea admin login fact
+      ansible.builtin.set_fact:
+        gitea_admin_login: "{{ gitea_admin_status.json.data[0].username }}"
+
+# Configure gitea admin user
+- name: Configure gitea admin user
+  when: >
+    gitea_api_token is undefined or
+    gitea_admin_username not in gitea_admin_login
+  block:
+    # Create gitea admin user
+    - name: Create gitea admin
+      community.docker.docker_container_exec:
+        container: "{{ gitea_name }}"
+        command: >-
+          gitea admin user create
+          --username {{ gitea_admin_username }}
+          --password '{{ gitea_admin_password }}'
+          --email {{ gitea_admin_email }}
+          --admin true
+          --must-change-password false
+        user: "git"
+
+    # Generate gitea admin user api token
+    - name: Generate gitea admin api token
+      community.docker.docker_container_exec:
+        container: "{{ gitea_name }}"
+        command: "gitea admin user generate-access-token --username {{ gitea_admin_username }} --scopes all"
+        user: "git"
+      register: gitea_admin_api_token
+
+    # Save gitea admin api token
+    - name: Save gitea admin api token
+      become: true
+      ansible.builtin.copy:
+        dest: "{{ service_root_path }}/{{ gitea_name }}/admin_api_token"
+        content: "{{ gitea_admin_api_token.stdout.split(':').1 | trim }}"
+        mode: "0644"
+        force: true
+      no_log: true
+
+# Set gitea admin API token fact
+- name: Set gitea admin api token fact
+  block:
+    # Get existed gitea secrets
+    - name: Get gitea admin api token
+      ansible.builtin.slurp:
+        src: "{{ service_root_path }}/{{ gitea_name }}/admin_api_token"
+      register: gitea_secrets_encoded
+
+    # Set existed gitea secrets
+    - name: Set gitea admin api token
+      when: >
+        gitea_secrets_encoded is defined and
+        gitea_secrets_encoded | length > 0
+      ansible.builtin.set_fact:
+        gitea_api_token: "{{ (gitea_secrets_encoded.content | b64decode) | trim }}"
+
+# Add gitea admin ssh keys
+- name: Add gitea admin ssh keys
+  when: >
+    gitea_admin_login is undefined or
+    gitea_admin_username not in gitea_admin_login
+  ansible.builtin.uri:
+    url: "http://{{ gitea_domain }}:{{ gitea_web_port }}/api/v1/user/keys"
+    method: POST
+    headers:
+      Authorization: token {{ gitea_api_token }}
+      Content-Type: application/json
+    body:
+      key: "{{ item }}"
+      read_only: true
+      title: "{{ item | regex_search('\\w{1,}$') }}"
+    body_format: json
+    status_code: 201
+  with_file: "{{ lookup('ansible.builtin.fileglob', '*.pub', wantlist=True) }}"
+  no_log: true
