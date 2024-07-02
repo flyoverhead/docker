@@ -1,21 +1,25 @@
 ---
-# Service root path
-service_root_path: "/opt/docker_services"
 
-# Default timezone
-timezone: "Europe/Moscow"
+docker_repo_key: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+docker_repo_url: https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} stable
 
-# Docker configuration
-docker_group: "docker"
-docker_mirror: "https://download.docker.com"
-docker_gpg_key: "/linux/{{ ansible_distribution | lower }}/gpg"
-docker_gpg_check: true
-docker_apt_repo: "/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} stable"
-docker_add_repo: true
-docker_packages: ["docker.io", "docker-compose", "docker-registry"]
-docker_required_packages: ["apt-transport-https", "ca-certificates", "gnupg"]
-docker_restart_policy: "always"
-docker_network_mode: "host"
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
 
-# Docker users
-docker_users: ["{{ ansible_env.USER }}"]
+docker_required_packages:
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+
+docker_path: /opt/docker
+
+docker_restart_policy: always
+docker_network_mode: host
+docker_timezone: Europe/Moscow
+
+docker_users:
+  - '{{ ansible_user }}'

@@ -1,60 +1,77 @@
 ---
-# Service root path
-service_root_path: "/opt/docker_services"
 
-# Docker configuration
-docker_restart_policy: "always"
-docker_network_mode: "host"
-
-# Default timezone
-timezone: "Europe/Moscow"
-
-# XRay configuration
 # https://xtls.github.io/
 # https://hub.docker.com/r/teddysun/xray
-xray_name: "xray"
-xray_image: "teddysun/xray"
-xray_tag: "1.8.4"
-xray_listening_address: "0.0.0.0"
-xray_listening_port: "443"
-xray_config: "vless_xtls_utls_reality"
-xray_server_public_address: "{{ ansible_host }}"
-xray_server_vless_flow: "xtls-rprx-vision"
-xray_clients_list: ["client01", "client02"]
+xray_name: xray
+xray_image: teddysun/xray
+xray_tag: 1.8.11
+xray_path: /opt/docker/xray
+xray_restart_policy: always
+xray_network_mode: host
+xray_timezone: Europe/Moscow
 
-# XRay server tuning configuration
+xray_listening_address: 0.0.0.0
+xray_listening_port: 443
+xray_public_address: '{{ ansible_host }}'
+
+xray_server_config:
+  name: '{{ inventory_hostname }}'
+  tag: proxy
+  server_address: '{{ xray_public_address }}'
+  server_port: '{{ xray_listening_port }}'
+  vless_address: microsoft.com
+  block:
+    domain: []
+    ip: []
+    port: []
+    protocol: []
+  direct:
+    domain: []
+    ip: []
+    port: []
+    protocol: []
+  proxy:
+    domain: []
+    ip: []
+    port: []
+    protocol: []
+
+xray_clients: []
+xray_geofiles: []
+
+xray_force_update_secrets: false
+
 xray_server_socks_tuning: false
 xray_server_socks_tuning_config:
-  fs.file-max: "51200"
-  net.core.default_qdisc: "fq"
-  net.ipv4.tcp_congestion_control: "bbr"
-  net.core.rmem_max: "67108864"
-  net.core.wmem_max: "67108864"
-  net.core.netdev_max_backlog: "250000"
-  net.core.somaxconn: "4096"
-  net.ipv4.tcp_syncookies: "1"
-  net.ipv4.tcp_tw_reuse: "1"
-  net.ipv4.tcp_fin_timeout: "30"
-  net.ipv4.tcp_keepalive_time: "1200"
-  net.ipv4.ip_local_port_range: "10000 65000"
-  net.ipv4.tcp_keepalive_probes: "5"
-  net.ipv4.tcp_keepalive_intvl: "30"
-  net.ipv4.tcp_max_syn_backlog: "8192"
-  net.ipv4.tcp_max_tw_buckets: "5000"
-  net.ipv4.tcp_fastopen: "3"
-  net.ipv4.tcp_mem: "25600 51200 102400"
-  net.ipv4.udp_mem: "25600 51200 102400"
-  net.ipv4.tcp_rmem: "4096 87380 67108864"
-  net.ipv4.tcp_wmem: "4096 65536 67108864"
-  net.ipv4.tcp_mtu_probing: "1"
-  net.ipv4.tcp_slow_start_after_idle: "0"
+  fs.file-max: 51200
+  net.core.default_qdisc: fq
+  net.ipv4.tcp_congestion_control: bbr
+  net.core.rmem_max: 67108864
+  net.core.wmem_max: 67108864
+  net.core.netdev_max_backlog: 250000
+  net.core.somaxconn: 4096
+  net.ipv4.tcp_syncookies: 1
+  net.ipv4.tcp_tw_reuse: 1
+  net.ipv4.tcp_fin_timeout: 30
+  net.ipv4.tcp_keepalive_time: 1200
+  net.ipv4.ip_local_port_range: 10000 65000
+  net.ipv4.tcp_keepalive_probes: 5
+  net.ipv4.tcp_keepalive_intvl: 30
+  net.ipv4.tcp_max_syn_backlog: 8192
+  net.ipv4.tcp_max_tw_buckets: 5000
+  net.ipv4.tcp_fastopen: 3
+  net.ipv4.tcp_mem: 25600 51200 102400
+  net.ipv4.udp_mem: 25600 51200 102400
+  net.ipv4.tcp_rmem: 4096 87380 67108864
+  net.ipv4.tcp_wmem: 4096 65536 67108864
+  net.ipv4.tcp_mtu_probing: 1
+  net.ipv4.tcp_slow_start_after_idle: 0
 
-# XRay server system limits
 xray_system_limits:
-  - limit: "nofile"
-    domain: "*"
+  - limit: nofile
+    domain: '*'
     types:
-      - type: "soft"
-        value: "51200"
-      - type: "hard"
-        value: "51200"
+      - type: soft
+        value: 51200
+      - type: hard
+        value: 51200

@@ -1,31 +1,16 @@
 ---
-# Start wireguard service
-- name: Start wireguard service
-  community.docker.docker_compose:
-    project_src: "{{ service_root_path }}/{{ wireguard_name }}"
-    state: present
-  register: wireguard_service
-  retries: 5
-  delay: 10
-  until: wireguard_service.services[wireguard_name][wireguard_name].state.running
-  notify:
-    - Check wireguard service
 
-# Restart wireguard service
-- name: Restart wireguard service
-  community.docker.docker_compose:
-    project_src: "{{ service_root_path }}/{{ wireguard_name }}"
+- name: wireguard | start container
+  community.docker.docker_compose_v2:
+    project_src: '{{ wireguard_path }}'
     state: present
-    restarted: true
-  notify:
-    - Check wireguard service
+    wait: true
+    wait_timeout: 60
 
-# Check wireguard service
-- name: Check wireguard service
-  community.docker.docker_container_exec:
-    container: "{{ wireguard_name }}"
-    command: "wg show"
-  register: wireguard_status
-  failed_when: >
-    wireguard_status is undefined or
-    wireguard_status | length == 0
+- name: wireguard | restart container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ wireguard_path }}'
+    state: restarted
+    wait: true
+    wait_timeout: 60

@@ -1,24 +1,24 @@
 ---
-# Check current dnscrypt-proxy service if exists
-- name: Check dnscrypt-proxy container
-  community.docker.docker_container_info:
-    name: "{{ dnscrypt_name }}"
-  register: dnscrypt_service
-  changed_when: >
-    not dnscrypt_service.exists or
-    dnscrypt_tag not in dnscrypt_service.container.Config.Image
-  failed_when: dnscrypt_service.exists and dnscrypt_service.container.State.ExitCode != 0
-  notify:
-    - Start dnscrypt-proxy service
 
-# Prepare dnscrypt-proxy environment
-- name: Prepare dnscrypt-proxy environment
-  ansible.builtin.include_tasks: prepare.yml
+- name: detect
+  ansible.builtin.include_tasks:
+    file: detect.yml
 
-# Configure dnscrypt-proxy service
-- name: Configure dnscrypt-proxy service
-  ansible.builtin.include_tasks: configure.yml
+- name: install
+  ansible.builtin.include_tasks:
+    file: install.yml
+  when:
+    - not dnscrypt_container_exists
 
-# Deploy dnscrypt-proxy service
-- name: Deploy dnscrypt-proxy service
+- name: update
+  ansible.builtin.include_tasks:
+    file: update.yml
+  when:
+    - dnscrypt_container_update
+
+- name: config
+  ansible.builtin.include_tasks:
+    file: config.yml
+
+- name: handlers
   ansible.builtin.meta: flush_handlers

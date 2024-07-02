@@ -1,0 +1,18 @@
+---
+
+- name: detect | services
+  ansible.builtin.service_facts:
+
+- name: detect | node-exporter container
+  community.docker.docker_container_info:
+    name: '{{ node_exporter_name }}'
+  register: node_exporter_container
+
+- name: detect | node-exporter container exists fact
+  ansible.builtin.set_fact:
+    node_exporter_container_exists: '{{ true if node_exporter_container.exists else false }}'
+
+- name: detect | node-exporter container update fact
+  ansible.builtin.set_fact:
+    node_exporter_container_update: >
+      {{ true if node_exporter_container.exists and node_exporter_tag not in node_exporter_container.container.Config.Image else false }}

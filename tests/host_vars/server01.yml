@@ -1,0 +1,39 @@
+---
+
+ansible_host: 192.168.56.11
+
+alertmanager_listening_port: 9093
+dnscrypt_listening_port: 5454
+grafana_listening_port: 8030
+node_exporter_listening_port: 9100
+pihole_web_port: 8060
+pihole_dns_port: 5353
+prometheus_listening_port: 9090
+torrserver_port: 8070
+wireguard_public_port: 51820
+xray_listening_port: 8443
+
+xray_server_config:
+  name: '{{ inventory_hostname }}'
+  tag: in-russia
+  private_key: ''
+  public_key: ''
+  server_address: '{{ xray_public_address }}'
+  server_port: '{{ xray_listening_port }}'
+  vless_address: rutube.ru
+  proxy:
+    domain:
+      - regexp:^([\\w\\-\\.]+\\.)ru$
+      - regexp:^([\\w\\-\\.]+\\.)su$
+      - regexp:^([\\w\\-\\.]+\\.)xn--p1ai$
+      - regexp:^([\\w\\-\\.]+\\.)xn--p1acf$
+      - regexp:^([\\w\\-\\.]+\\.)xn--80asehdb$
+      - regexp:^([\\w\\-\\.]+\\.)xn--c1avg$
+      - regexp:^([\\w\\-\\.]+\\.)xn--80aswg$
+      - regexp:^([\\w\\-\\.]+\\.)xn--80adxhks$
+      - regexp:^([\\w\\-\\.]+\\.)moscow$
+      - regexp:^([\\w\\-\\.]+\\.)xn--d1acj3b$
+      - ext:geosite_v2fly.dat:category-gov-ru
+      - ext:geosite_v2fly.dat:private
+      - ext:geosite_v2fly.dat:yandex
+      - ext:geosite_v2fly.dat:vk

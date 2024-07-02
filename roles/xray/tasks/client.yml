@@ -1,42 +1,76 @@
 ---
-# Check if client is already configured
-- name: Check for already configured xray client {{ xray_client_item }}
-  ansible.builtin.set_fact:
-    xray_client_exist: true
-  loop: "{{ xray_clients }}"
-  when: >
-    item is defined and
-    item | type_debug == "dict" and
-    xray_client_item in item.name
 
-# Generate secret for new client if it doesn't exist in current clients list
-- name: Configure new xray client {{ xray_client_item }}
-  when: xray_client_exist is undefined or not xray_client_exist
+- name: client | get current secrets
+  ansible.builtin.set_fact:
+    current_client_id: >-
+      {{ slurp_database_file.content | b64decode | regex_search("(?<=" + item.name + "_id=).*", multiline=True) }}
+    current_client_short_id: >-
+      {{ slurp_database_file.content | b64decode | regex_search("(?<=" + item.name + "_short_id=).*", multiline=True) }}
+  when:
+    - slurp_database_file.content is defined
+
+- name: client | generate secrets
+  when:
+    - current_client_id | default('') | length == 0
+    - current_client_short_id | default('') | length == 0
   block:
-    # Generate xray client UUID
-    - name: Generate xray client uuid
+
+    - name: client | generate id
       become: true
       community.docker.docker_container:
-        name: "{{ xray_name }}"
-        image: "{{ xray_image }}:{{ xray_tag }}"
+        name: '{{ xray_name }}'
+        image: '{{ xray_image }}:{{ xray_tag }}'
         cleanup: true
-        command: "xray uuid"
+        command: xray uuid
         detach: false
-      register: xray_client_uuid_output
+      register: xray_client_id_output
+      changed_when: true
 
-    # Set xray client UUID fact
-    - name: Set xray client uuid fact
+    - name: client | set id fact
       ansible.builtin.set_fact:
-        xray_client_uuid: "{{ xray_client_uuid_output.container.Output | trim }}"
+        generated_client_id: '{{ xray_client_id_output.container.Output | trim }}'
 
-    # Save newly generated client to clients list file for future comparsion
-    - name: Add xray client to server clients list file
-      become: true
-      when: "'vpn_server' in group_names"
-      ansible.builtin.lineinfile:
-        path: "{{ service_root_path }}/{{ xray_name }}/clients/clients.yml"
-        line: "{ 'name': {{ xray_client_item }}, 'id': {{ xray_client_uuid }} }"
-        insertbefore: "BOF"
-        state: "present"
-        create: true
-      no_log: true
+    - name: client | generate short id
+      ansible.builtin.command:
+        cmd: openssl rand -hex 8
+      register: short_id_output
+      changed_when: true
+
+    - name: client | set short id fact
+      ansible.builtin.set_fact:
+        generated_client_short_id: '{{ short_id_output.stdout | trim }}'
+
+- name: client | set id and short id facts
+  ansible.builtin.set_fact:
+    client_id: >-
+      {{ item.id if item.id | default([]) | length > 0 else
+      current_client_id if current_client_id | default([]) | length > 0 else
+      generated_client_id }}
+    client_short_id: >-
+      {{ item.short_id if item.short_id | default([]) | length > 0 else
+      current_client_short_id if current_client_short_id | default([]) | length > 0 else
+      generated_client_short_id }}
+
+- name: client | add secrets to client's config
+  ansible.builtin.set_fact:
+    xray_generated_clients: >-
+      {{ xray_generated_clients | default([]) + [item |
+      combine({"id": client_id}, {"short_id": client_short_id})] }}
+
+- name: config | add client id to database
+  become: true
+  ansible.builtin.lineinfile:
+    dest: '{{ xray_path }}/database'
+    regexp: '{{ item.name }}_id='
+    line: '{{ item.name }}_id={{ client_id }}'
+    state: present
+  no_log: true
+
+- name: config | add client short id to databse
+  become: true
+  ansible.builtin.lineinfile:
+    dest: '{{ xray_path }}/database'
+    regexp: '{{ item.name }}_short_id='
+    line: '{{ item.name }}_short_id={{ client_short_id }}'
+    state: present
+  no_log: true

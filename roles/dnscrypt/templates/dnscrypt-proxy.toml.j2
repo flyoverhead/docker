@@ -29,11 +29,8 @@
 ##
 ## Remove the leading # first to enable this; lines starting with # are ignored.
 
-{% if dnscrypt_public_resolvers is defined and dnscrypt_public_resolvers | list | length %}
-server_names = {{ dnscrypt_public_resolvers | list | to_json | regex_replace('"', '\'') }}
-{% elif dnscrypt_public_resolvers is defined and dnscrypt_public_resolvers | length %}
-server_names = {{ dnscrypt_public_resolvers }}
-{% else %}
+{% if dnscrypt_public_resolvers | length %}
+server_names = {{ dnscrypt_public_resolvers | to_json | regex_replace('"', '\'') }}
 {% endif %}
 
 
@@ -44,14 +41,10 @@ server_names = {{ dnscrypt_public_resolvers }}
 ## To listen to all IPv4 addresses, use `listen_addresses = ['0.0.0.0:53']`
 ## To listen to all IPv4+IPv6 addresses, use `listen_addresses = ['[::]:53']`
 
-{% if dnscrypt_listening_addresses is defined and dnscrypt_listening_addresses | list | length %}
-listen_addresses = {{ dnscrypt_listening_addresses | map('regex_replace', '$', ':' + dnscrypt_listening_port) | list | to_json | regex_replace('"', '\'') }}
-{% elif dnscrypt_listening_addresses is defined and dnscrypt_listening_addresses | length %}
-listen_addresses = {{ dnscrypt_listening_addresses }}:{{ dnscrypt_listening_port }}
+{% if dnscrypt_listening_addresses | length %}
+listen_addresses = {{ dnscrypt_listening_addresses | map('regex_replace', '$', ':' + dnscrypt_listening_port | string) | to_json | regex_replace('"', '\'') }}
 {% elif dnscrypt_ipv6_servers %}
 listen_addresses = ['[::]:{{ dnscrypt_listening_port }}']
-{% else %}
-['0.0.0.0:{{ dnscrypt_listening_port }}']
 {% endif %}
 
 ## Maximum number of simultaneous client connections to accept
@@ -97,8 +90,7 @@ require_nolog = {{ dnscrypt_nolog_servers | lower }}
 require_nofilter = {{ dnscrypt_nofilter_servers | lower }}
 
 # Server names to avoid even if they match all criteria
-disabled_server_names = {{ dnscrypt_disabled_public_resolvers | list | to_json | regex_replace('"', '\'') }}
-
+disabled_server_names = {{ dnscrypt_disabled_public_resolvers | to_json | regex_replace('"', '\'') }}
 
 ## Always use TCP to connect to upstream servers.
 ## This can be useful if you need to route everything through Tor.
@@ -267,7 +259,7 @@ cert_refresh_delay = 240
 ## not be sent there. If you're using DNSCrypt or Anonymized DNS and your
 ## lists are up to date, these resolvers will not even be used.
 
-bootstrap_resolvers = {{ dnscrypt_upstream_servers | map('regex_replace', '$', ':53') | list | to_json | regex_replace('"', '\'') }}
+bootstrap_resolvers = {{ dnscrypt_upstream_servers | map('regex_replace', '$', ':53') | to_json | regex_replace('"', '\'') }}
 
 
 ## Always use the bootstrap resolver before the system DNS settings.

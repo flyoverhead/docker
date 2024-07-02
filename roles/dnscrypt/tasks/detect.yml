@@ -1,0 +1,18 @@
+---
+
+- name: detect | services
+  ansible.builtin.service_facts:
+
+- name: detect | dnscrypt container
+  community.docker.docker_container_info:
+    name: '{{ dnscrypt_name }}'
+  register: dnscrypt_container
+
+- name: detect | dnscrypt container exists fact
+  ansible.builtin.set_fact:
+    dnscrypt_container_exists: '{{ true if dnscrypt_container.exists else false }}'
+
+- name: detect | dnscrypt container update fact
+  ansible.builtin.set_fact:
+    dnscrypt_container_update: >
+      {{ true if dnscrypt_container.exists and dnscrypt_tag not in dnscrypt_container.container.Config.Image else false }}

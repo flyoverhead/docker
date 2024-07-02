@@ -1,0 +1,33 @@
+---
+
+pihole_name: pihole
+pihole_image: pihole/pihole
+pihole_tag: 2024.05.0
+pihole_dnsmasq_listening_address: all
+pihole_upstream_dns:
+  - '{{ ansible_host }}#{{ dnscrypt_listening_port }}'
+pihole_web_password: pihole
+pihole_web_address: '{{ ansible_host }}'
+pihole_web_port: 8060
+pihole_dns_port: 53
+pihole_dnssec: true
+pihole_query_logging: true
+pihole_dns_bogus_priv: true
+pihole_dns_fqdn_required: true
+pihole_web_theme: default-dark
+pihole_ipv6_support: false
+pihole_adlist_content: "{{ lookup('file', 'adlist.list') | split | length + 1 }}"
+pihole_domain_blacklist_content: "{{ lookup('file', 'domain_black.list') | split | length }}"
+pihole_domain_whitelist_content: "{{ lookup('file', 'domain_white.list') | split | length }}"
+pihole_path: '{{ docker_path }}/{{ pihole_name }}'
+pihole_restart_policy: '{{ docker_restart_policy }}'
+pihole_network_mode: '{{ docker_network_mode }}'
+pihole_timezone: '{{ docker_timezone }}'
+
+pihole_required_packages:
+  - sqlite3
+
+pihole_sysctl_config_ipv6:
+  - net.ipv6.conf.all.disable_ipv6
+  - net.ipv6.conf.default.disable_ipv6
+  - net.ipv6.conf.lo.disable_ipv6

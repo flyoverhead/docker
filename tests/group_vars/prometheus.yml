@@ -1,0 +1,52 @@
+---
+
+prometheus_name: prometheus
+prometheus_image: prom/prometheus
+prometheus_tag: v2.52.0
+prometheus_listening_address: '{{ ansible_host }}'
+prometheus_listening_port: 9090
+prometheus_path: '{{ docker_path }}/{{ prometheus_name }}'
+prometheus_restart_policy: '{{ docker_restart_policy }}'
+prometheus_network_mode: '{{ docker_network_mode }}'
+prometheus_timezone: '{{ docker_timezone }}'
+
+prometheus_command:
+  - --config.file=/etc/prometheus/prometheus.yml
+
+prometheus_global_config:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+
+prometheus_scrape_jobs:
+
+  - job_name: alertmanager
+    scrape_interval: 1m
+    static_configs:
+      - targets:
+          - '{{ ansible_host }}:{{ alertmanager_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'
+
+  - job_name: node-exporter
+    scrape_interval: 1m
+    static_configs:
+      - targets:
+          - '{{ ansible_host }}:{{ node_exporter_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'
+
+  - job_name: prometheus
+    scrape_interval: 1m
+    static_configs:
+      - targets:
+          - '{{ ansible_host }}:{{ prometheus_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'
+
+prometheus_alert_jobs:
+  - static_configs:
+      - targets:
+          - '{{ ansible_host }}:{{ alertmanager_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'

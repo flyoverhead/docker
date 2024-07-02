@@ -1,0 +1,11 @@
+---
+
+- name: update | prometheus docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ prometheus_path }}/docker-compose.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - prometheus | restart container

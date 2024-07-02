@@ -16,11 +16,7 @@ Blocklists, domains blacklists and whitelists can be added by filling in the cor
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
-| `service_root_path` | Root path for services files on host machine | `/opt/docker_services` |
-| `docker_restart_policy` | Docker containers restart policy | `always` |
-| `docker_network_mode` | Docker containers network mode | `host` |
-| `timezone` | Default timezone for docker services | `Europe/Moscow` |
-| `sysctl_config_ipv6` | Sysctl IPv6 parameters list | `["net.ipv6.conf.all.disable_ipv6", "net.ipv6.conf.default.disable_ipv6", "net.ipv6.conf.lo.disable_ipv6"]` |
+| `pihole_sysctl_config_ipv6` | Sysctl IPv6 parameters list | `["net.ipv6.conf.all.disable_ipv6", "net.ipv6.conf.default.disable_ipv6", "net.ipv6.conf.lo.disable_ipv6"]` |
 | `pihole_required_packages` | List of packages required for PiHole configuration | `sqlite3` |
 | `pihole_name` | PiHole service name (used for container's and folder's names) | `pihole` |
 | `pihole_image` | PiHole docker image name | `pihole/pihole` |
@@ -39,6 +35,10 @@ Blocklists, domains blacklists and whitelists can be added by filling in the cor
 | `pihole_adlist_content` | PiHole adlist content (populated from `adlist.list` file) | [adlist.list](files/adlist.list) |
 | `pihole_domain_blacklist_content` | PiHole domain blacklist content (populated from `domain_black.list` file) | [domain_black.list](files/domain_black.list) |
 | `pihole_domain_whitelist_content` | PiHole domain whitelist content (populated from `domain_white.list` file) | [domain_white.list](files/domain_white.list) |
+| `pihole_path` | Path to service files | `/opt/docker` |
+| `pihole_restart_policy` | Service container restart policy | `always` |
+| `pihole_network_mode` | Service container network mode | `host` |
+| `pihole_timezone` | Default timezone for docker service | `Europe/Moscow` |
 
 ## Dependencies
 

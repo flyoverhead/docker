@@ -1,12 +1,10 @@
 ---
-# Restart docker systemd service unit
-- name: Enable and start docker service
-  ansible.builtin.service:
-    name: "docker"
-    state: "started"
+
+- name: docker | start service
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
     enabled: true
 
-# Reload connection to host after adding users
-# to docker group for changes to take effect
-- name: Reload groups
+- name: docker | reload groups
   ansible.builtin.meta: reset_connection

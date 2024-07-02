@@ -1,0 +1,18 @@
+---
+
+- name: detect | services
+  ansible.builtin.service_facts:
+
+- name: detect | torrserver container
+  community.docker.docker_container_info:
+    name: '{{ torrserver_name }}'
+  register: torrserver_container
+
+- name: detect | torrserver container exists fact
+  ansible.builtin.set_fact:
+    torrserver_container_exists: '{{ true if torrserver_container.exists else false }}'
+
+- name: detect | torrserver container update fact
+  ansible.builtin.set_fact:
+    torrserver_container_update: >
+      {{ true if torrserver_container.exists and torrserver_tag not in torrserver_container.container.Config.Image else false }}

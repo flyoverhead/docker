@@ -1,11 +1,16 @@
+---
 galaxy_info:
   author: flyoverhead
   description: Grafana docker service deployment
   license: AGPL-3.0-only, Apache-2.0
-  min_ansible_version: "2.13"
+  min_ansible_version: '2.13'
   platforms:
     - name: Debian
-      versions: ["bullseye", "bookworm"]
-  galaxy_tags: ["docker", "services", "grafana"]
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - grafana
 
-dependencies: []
+dependencies:
+  - role: docker

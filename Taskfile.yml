@@ -1,44 +1,34 @@
 ---
-version: "3"
+
+version: '3'
+
+silent: true
 
 tasks:
-  test-vmware:
-    dir: tests
-    vars:
-      VAGRANT_PROVIDER: vmware_fusion
-    cmds:
-      - echo "Test Home Lab with VMWare provider"
-      - vagrant up
-      - pip install -r ../requirements.txt
-      - ansible-playbook --inventory inventory.yml test.yml
 
-  test-vbox:
+  play:
     dir: tests
-    vars:
-      VAGRANT_PROVIDER: virtualbox
     cmds:
-      - echo "Test Home Lab with VirtualBox provider"
+      - ansible-playbook -i inventory.yml playbook.yml
+
+  reload:
+    dir: tests
+    cmds:
+      - ansible -i inventory.yml all -m ansible.builtin.reboot --become
+
+  start:
+    dir: tests
+    cmds:
       - vagrant up
-      - pip install -r ../requirements.txt
-      - ansible-playbook --inventory inventory.yml test.yml
+      - task: play
 
   stop:
     dir: tests
     cmds:
-      - vagrant halt
-
-  clean:
-    dir: tests
-    cmds:
-      - rm -rf .vagrant || true
-
-  destroy:
-    dir: tests
-    cmds:
       - vagrant destroy -f
-      - task: clean
+      - rm -rf .vagrant || True
 
-  update-box:
+  update:
     dir: tests
     cmds:
       - vagrant box update

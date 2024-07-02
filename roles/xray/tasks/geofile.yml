@@ -1,0 +1,22 @@
+---
+
+- name: geofiles | latest release {{ geofile.name }}
+  delegate_to: localhost
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/{{ geofile.repo }}/releases/latest
+  register: geofile_latest_release
+
+- name: geofiles | download {{ geofile.name }}
+  become: true
+  ansible.builtin.get_url:
+    url: '{{ geofile_asset.browser_download_url }}'
+    dest: '{{ xray_path }}/data/{{ geofile.name }}.dat'
+    mode: '0644'
+  loop: '{{ geofile_latest_release.json.assets }}'
+  loop_control:
+    label: '{{ geofile.file }}'
+    loop_var: geofile_asset
+  when:
+    - geofile.file == geofile_asset.name
+  register: geofile_download
+  until: geofile_download is succeeded

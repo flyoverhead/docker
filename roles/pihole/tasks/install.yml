@@ -1,0 +1,71 @@
+---
+
+- name: install | pihole required packages
+  become: true
+  ansible.builtin.apt:
+    name: '{{ item }}'
+    state: present
+  loop: '{{ pihole_required_packages }}'
+
+- name: install | disable systemd-resolved stub resolver
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/resolved.conf
+    regexp: ^#DNSStubListener=
+    line: DNSStubListener=no
+  when:
+    - '"systemd-resolved.service" in services'
+  notify:
+    - pihole | restart systemd-resolved
+
+- name: install | disable dnsmasq systemd service
+  become: true
+  ansible.builtin.systemd_service:
+    name: dnsmasq.service
+    state: stopped
+    enabled: false
+    masked: true
+  when:
+    - '"dnsmasq.service" in services'
+
+- name: install | run handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: install | configure sysctl ipv6 support
+  become: true
+  ansible.posix.sysctl:
+    name: '{{ item }}'
+    value: '{{ 0 if pihole_ipv6_support else 1 }}'
+    sysctl_set: true
+  loop: '{{ pihole_sysctl_config_ipv6 }}'
+  loop_control:
+    label: '{{ item }} value set to {{ 0 if pihole_ipv6_support else 1 }}'
+
+- name: install | pihole service folder
+  become: true
+  ansible.builtin.file:
+    path: '{{ pihole_path }}'
+    state: directory
+    mode: '0755'
+
+- name: install | pihole persistent data directory
+  become: true
+  ansible.builtin.file:
+    path: '{{ pihole_path }}/data'
+    state: directory
+    mode: '0755'
+  register: pihole_data_dir_result
+  changed_when: pihole_data_dir_result.uid != 999
+
+- name: install | pihole docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ pihole_path }}/docker-compose.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - pihole | start container
+
+- name: install | run handlers
+  ansible.builtin.meta: flush_handlers

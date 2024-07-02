@@ -1,15 +1,40 @@
-test:
+---
+
+all:
   children:
-    vpn_server:
+    servers:
       hosts:
-        server:
-          ansible_host: "192.168.56.11"
-          ansible_port: "54781"
-    vpn_clients:
+        server01:
+        server02:
+    clients:
       hosts:
         client01:
-          ansible_host: "192.168.56.12"
-          ansible_port: "54782"
         client02:
-          ansible_host: "192.168.56.13"
-          ansible_port: "54783"
+    alertmanager:
+      children:
+        servers:
+    dnscrypt:
+      children:
+        servers:
+    grafana:
+      children:
+        servers:
+    node_exporter:
+      children:
+        servers:
+        clients:
+    pihole:
+      children:
+        servers:
+    prometheus:
+      children:
+        servers:
+    torrserver:
+      children:
+        servers:
+    wireguard:
+      children:
+        servers:
+    xray:
+      children:
+        servers:

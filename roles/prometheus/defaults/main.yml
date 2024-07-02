@@ -1,42 +1,55 @@
 ---
-# Service root path
-service_root_path: "/opt/docker_services"
 
-# Docker configuration
-docker_restart_policy: "always"
-docker_network_mode: "host"
-
-# Default timezone
-timezone: "Europe/Moscow"
-
-# Prometheus configuration
 # https://prometheus.io/
 # https://hub.docker.com/r/prom/prometheus
-prometheus_name: "prometheus"
-prometheus_image: "prom/prometheus"
-prometheus_tag: "v2.46.0"
-prometheus_port: "9090"
-prometheus_command: ["--config.file=/etc/prometheus/prometheus.yml"]
+prometheus_name: prometheus
+prometheus_image: prom/prometheus
+prometheus_tag: v2.52.0
+prometheus_listening_address: 127.0.0.1
+prometheus_listening_port: 9090
+prometheus_path: /opt/docker/prometheus
+prometheus_restart_policy: always
+prometheus_network_mode: host
+prometheus_timezone: Europe/Moscow
+
+prometheus_command:
+  - --web.listen-address={{ prometheus_listening_address }}:{{ prometheus_listening_port }}
+  - --config.file=/etc/prometheus/prometheus.yml
+
 prometheus_global_config:
-  scrape_interval: "15s"
-  scrape_timeout: "10s"
-  evaluation_interval: "15s"
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+
 prometheus_scrape_jobs:
-  - job_name: "alertmanager"
-    scrape_interval: "1m"
+
+  - job_name: alertmanager
+    scrape_interval: 1m
     static_configs:
-      - targets: ["{{ ansible_host }}:{{ alertmanager_port }}"]
-        labels: { "instance": "{{ ansible_hostname }}" }
-  - job_name: "node-exporter"
-    scrape_interval: "1m"
+      - targets:
+          - '{{ ansible_host }}:{{ alertmanager_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'
+
+  - job_name: node-exporter
+    scrape_interval: 1m
     static_configs:
-      - targets: ["{{ ansible_host }}:{{ node_exporter_port }}"]
-        labels: { "instance": "{{ ansible_hostname }}" }
-  - job_name: "prometheus"
-    scrape_interval: "1m"
+      - targets:
+          - '{{ ansible_host }}:{{ node_exporter_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'
+
+  - job_name: prometheus
+    scrape_interval: 1m
     static_configs:
-      - targets: ["{{ ansible_host }}:{{ prometheus_port }}"]
-        labels: { "instance": "{{ ansible_hostname }}" }
+      - targets:
+          - '{{ ansible_host }}:{{ prometheus_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'
+
 prometheus_alert_jobs:
   - static_configs:
-      - targets: ["{{ ansible_host }}:{{ alertmanager_port }}"]
+      - targets:
+          - '{{ ansible_host }}:{{ alertmanager_listening_port }}'
+        labels:
+          instance: '{{ ansible_hostname }}'

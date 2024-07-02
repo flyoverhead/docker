@@ -1,20 +1,20 @@
 ---
-# Check current torrserver service if exists
-- name: Check torrserver container
-  community.docker.docker_container_info:
-    name: "{{ torrserver_name }}"
-  register: torrserver_service
-  changed_when: >
-    not torrserver_service.exists or
-    torrserver_tag not in torrserver_service.container.Config.Image
-  failed_when: torrserver_service.exists and torrserver_service.container.State.ExitCode != 0
-  notify:
-    - Start torrserver service
 
-# Configure torrserver service
-- name: Configure torrserver service
-  ansible.builtin.include_tasks: configure.yml
+- name: detect
+  ansible.builtin.include_tasks:
+    file: detect.yml
 
-# Deploy torrserver service
-- name: Deploy torrserver service
+- name: install
+  ansible.builtin.include_tasks:
+    file: install.yml
+  when:
+    - not torrserver_container_exists
+
+- name: update
+  ansible.builtin.include_tasks:
+    file: update.yml
+  when:
+    - torrserver_container_update
+
+- name: handlers
   ansible.builtin.meta: flush_handlers

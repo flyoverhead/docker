@@ -1,0 +1,17 @@
+---
+
+node_exporter_name: node-exporter
+node_exporter_image: prom/node-exporter
+node_exporter_tag: v1.8.0
+node_exporter_listening_address: '{{ ansible_host }}'
+node_exporter_listening_port: 9100
+node_exporter_path: '{{ docker_path }}/{{ node_exporter_name }}'
+node_exporter_restart_policy: '{{ docker_restart_policy }}'
+node_exporter_network_mode: '{{ docker_network_mode }}'
+node_exporter_timezone: '{{ docker_timezone }}'
+
+node_exporter_command:
+  - --path.procfs=/host/proc
+  - --path.rootfs=/rootfs
+  - --path.sysfs=/host/sys
+  - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+)($$|/)

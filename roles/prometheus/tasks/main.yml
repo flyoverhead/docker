@@ -1,20 +1,24 @@
 ---
-# Check current prometheus service if exists
-- name: Check prometheus container
-  community.docker.docker_container_info:
-    name: "{{ prometheus_name }}"
-  register: prometheus_service
-  changed_when: >
-    not prometheus_service.exists or
-    prometheus_tag not in prometheus_service.container.Config.Image
-  failed_when: prometheus_service.exists and prometheus_service.container.State.ExitCode != 0
-  notify:
-    - Start prometheus service
 
-# Configure prometheus service
-- name: Configure prometheus service
-  ansible.builtin.include_tasks: configure.yml
+- name: detect
+  ansible.builtin.include_tasks:
+    file: detect.yml
 
-# Deploy prometheus service
-- name: Deploy prometheus service
+- name: install
+  ansible.builtin.include_tasks:
+    file: install.yml
+  when:
+    - not prometheus_container_exists
+
+- name: update
+  ansible.builtin.include_tasks:
+    file: update.yml
+  when:
+    - prometheus_container_update
+
+- name: config
+  ansible.builtin.include_tasks:
+    file: config.yml
+
+- name: handlers
   ansible.builtin.meta: flush_handlers

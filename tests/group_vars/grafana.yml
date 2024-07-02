@@ -1,0 +1,27 @@
+---
+
+grafana_name: grafana
+grafana_image: grafana/grafana-oss
+grafana_tag: 10.1.10
+grafana_path: '{{ docker_path }}/{{ grafana_name }}'
+grafana_restart_policy: '{{ docker_restart_policy }}'
+grafana_network_mode: '{{ docker_network_mode }}'
+grafana_timezone: '{{ docker_timezone }}'
+
+grafana_listening_port: 8030
+grafana_admin_username: grafana
+grafana_admin_password: grafana
+
+grafana_plugins:
+  - grafana-clock-panel
+  - grafana-simple-json-datasource
+
+grafana_dashboards:
+  - dashboard_id: 1860
+    revision_id: 31
+    name: node_exporter
+
+grafana_source_name: prometheus
+grafana_source_type: prometheus
+grafana_source_url: http://{{ ansible_host }}
+grafana_source_port: 9090

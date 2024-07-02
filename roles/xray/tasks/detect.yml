@@ -1,0 +1,50 @@
+---
+
+- name: detect | xray container
+  community.docker.docker_container_info:
+    name: '{{ xray_name }}'
+  register: xray_container
+
+- name: detect | xray container exists fact
+  ansible.builtin.set_fact:
+    xray_container_exists: '{{ true if xray_container.exists else false }}'
+
+- name: detect | xray container update fact
+  ansible.builtin.set_fact:
+    xray_container_update: '{{ true if xray_container.exists and xray_tag not in xray_container.container.Config.Image else false }}'
+
+- name: detect | check database file
+  ansible.builtin.stat:
+    path: '{{ xray_path }}/database'
+  register: database_file
+
+- name: detect | read database file
+  become: true
+  ansible.builtin.slurp:
+    src: '{{ xray_path }}/database'
+  register: slurp_database_file
+  when:
+    - database_file.stat.exists
+
+- name: detect | register database file content
+  ansible.builtin.set_fact:
+    database_file_content: >-
+      {{ slurp_database_file.content | b64decode | regex_replace("(_short)*_id|=.*", "") | split | unique
+      if database_file.stat.exists else database_file_content | default([]) }}
+  no_log: true
+
+- name: detect | set generate_xray_keys fact
+  ansible.builtin.set_fact:
+    generate_xray_keys: >-
+      {{ true if "xray_private_key" not in database_file_content or
+      "xray_public_key" not in database_file_content else false }}
+
+- name: detect | set xray_new_clients fact
+  ansible.builtin.set_fact:
+    xray_new_clients: >
+      {{ xray_new_clients | default([]) + [item] }}
+  loop: '{{ xray_clients }}'
+  loop_control:
+    label: '{{ item.name }}'
+  when:
+    - item.name not in database_file_content

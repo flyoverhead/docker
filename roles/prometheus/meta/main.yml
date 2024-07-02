@@ -1,11 +1,17 @@
+---
+
 galaxy_info:
   author: flyoverhead
   description: Prometheus docker service deployment
   license: Apache-2.0
-  min_ansible_version: "2.13"
+  min_ansible_version: '2.13'
   platforms:
     - name: Debian
-      versions: ["bullseye", "bookworm"]
-  galaxy_tags: ["docker", "services", "prometheus"]
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - prometheus
 
-dependencies: []
+dependencies:
+  - role: docker

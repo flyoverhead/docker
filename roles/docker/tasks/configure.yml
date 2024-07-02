@@ -1,0 +1,12 @@
+---
+
+- name: configure | add users to docker group
+  become: true
+  ansible.builtin.user:
+    name: '{{ item }}'
+    groups: docker
+    append: true
+  loop: '{{ docker_users }}'
+  notify:
+    - docker | reload groups
+    - docker | start service

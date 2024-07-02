@@ -1,0 +1,76 @@
+---
+
+ansible_host: 192.168.56.12
+
+alertmanager_listening_port: 9094
+dnscrypt_listening_port: 5656
+grafana_listening_port: 8031
+node_exporter_listening_port: 9101
+pihole_web_port: 8061
+pihole_dns_port: 5555
+prometheus_listening_port: 9091
+torrserver_port: 8071
+wireguard_public_port: 51821
+xray_listening_port: 8444
+
+xray_server_config:
+  name: '{{ inventory_hostname }}'
+  tag: out-russia
+  private_key: ''
+  public_key: ''
+  server_address: '{{ xray_public_address }}'
+  server_port: '{{ xray_listening_port }}'
+  vless_address: youtube.com
+  block:
+    domain:
+      - regexp:^([\\w\\-\\.]+\\.)ru$
+      - regexp:^([\\w\\-\\.]+\\.)su$
+      - regexp:^([\\w\\-\\.]+\\.)xn--p1ai$
+      - regexp:^([\\w\\-\\.]+\\.)xn--p1acf$
+      - regexp:^([\\w\\-\\.]+\\.)xn--80asehdb$
+      - regexp:^([\\w\\-\\.]+\\.)xn--c1avg$
+      - regexp:^([\\w\\-\\.]+\\.)xn--80aswg$
+      - regexp:^([\\w\\-\\.]+\\.)xn--80adxhks$
+      - regexp:^([\\w\\-\\.]+\\.)moscow$
+      - regexp:^([\\w\\-\\.]+\\.)xn--d1acj3b$
+      - ext:geosite_v2fly.dat:category-gov-ru
+      - ext:geosite_v2fly.dat:private
+      - ext:geosite_v2fly.dat:yandex
+      - ext:geosite_v2fly.dat:vk
+  proxy:
+    domain:
+      - ext:geosite_v2fly.dat:speedtest
+      - domain:browserleaks
+      - domain:nperf
+      - ext:geosite_antizapret.dat
+      - ext:geosite_v2fly.dat:category-anticensorship
+      - ext:geosite_v2fly.dat:category-cryptocurrency
+      - ext:geosite_v2fly.dat:openai
+      - ext:geosite_v2fly.dat:bing
+      - ext:geosite_v2fly.dat:duckduckgo
+      - ext:geosite_v2fly.dat:google
+      - ext:geosite_v2fly.dat:apple
+      - ext:geosite_v2fly.dat:xiaomi
+      - ext:geosite_v2fly.dat:nvidia
+      - ext:geosite_v2fly.dat:intel
+      - ext:geosite_v2fly.dat:bbc
+      - ext:geosite_v2fly.dat:twitter
+      - ext:geosite_v2fly.dat:linkedin
+      - ext:geosite_v2fly.dat:protonmail
+      - ext:geosite_v2fly.dat:tor
+      - ext:geosite_v2fly.dat:torproject
+      - ext:geosite_v2fly.dat:ebay
+      - ext:geosite_v2fly.dat:paypal
+      - ext:geosite_v2fly.dat:meta
+      - ext:geosite_v2fly.dat:adobe
+      - ext:geosite_v2fly.dat:tiktok
+      - ext:geosite_v2fly.dat:telegram
+      - ext:geosite_v2fly.dat:netflix
+      - ext:geosite_v2fly.dat:cloudflare
+      - domain:rutor
+      - domain:nnmclub
+      - domain:rutracker
+      - domain:cdninstagram.com
+      - domain:ig.me
+      - domain:instagram.com
+      - ext:geosite_v2fly.dat:category-dev

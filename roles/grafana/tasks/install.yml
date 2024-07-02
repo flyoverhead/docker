@@ -1,0 +1,18 @@
+---
+
+- name: install | grafana service folder
+  become: true
+  ansible.builtin.file:
+    path: '{{ grafana_path }}'
+    state: directory
+    mode: '0755'
+
+- name: install | grafana docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ grafana_path }}/docker-compose.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - grafana | start container

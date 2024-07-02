@@ -1,0 +1,37 @@
+---
+
+alertmanager_name: alertmanager
+alertmanager_image: prom/alertmanager
+alertmanager_tag: v0.27.0
+alertmanager_listening_address: '{{ ansible_host }}'
+alertmanager_listening_port: 9093
+alertmanager_path: '{{ docker_path }}/{{ alertmanager_name }}'
+alertmanager_restart_policy: '{{ docker_restart_policy }}'
+alertmanager_network_mode: '{{ docker_network_mode }}'
+alertmanager_timezone: '{{ docker_timezone }}'
+
+alertmanager_telegram_bot_roken: <telegram_bot_token>
+
+alertmanager_command:
+  - --config.file=/etc/alertmanager/alertmanager.yml
+
+alertmanager_global_config:
+  resolve_timeout: 5m
+
+alertmanager_route_config:
+  group_wait: 10s
+  group_interval: 10m
+  repeat_interval: 60m
+  group_by:
+    - alertname
+  receiver: telegram
+
+alertmanager_receivers_config:
+  - name: telegram
+    telegram_configs:
+      - send_resolved: true
+        api_url: https://api.telegram.org
+        bot_token: '{{ alertmanager_telegram_bot_roken }}'
+        chat_id: <telegram_chat_id>
+        message: '{% raw %}{{ template telegram.custom.message . }}{% endraw %}'
+        parse_mode: Markdown

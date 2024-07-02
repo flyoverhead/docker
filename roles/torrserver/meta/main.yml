@@ -1,11 +1,18 @@
+---
 galaxy_info:
   author: flyoverhead
   description: Torrserver docker service deployment
   license: GPL-3.0-only
-  min_ansible_version: "2.13"
+  min_ansible_version: '2.13'
   platforms:
     - name: Debian
-      versions: ["bullseye", "bookworm"]
-  galaxy_tags: ["docker", "services", "torrserver"]
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - docker
+    - services
+    - torrserver
 
-dependencies: []
+dependencies:
+  - role: docker

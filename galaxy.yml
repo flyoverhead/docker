@@ -1,16 +1,21 @@
-namespace: "flyoverhead"
-name: "docker"
-version: 1.0.0
+---
+
+namespace: flyoverhead
+name: docker
+version: 1.1.0
 readme: README.md
-authors: ["flyoverhead"]
+authors:
+  - flyoverhead
 description: Ansible collection for docker services deployment
-license: ["GPL-3.0-only"]
-tags: ["docker", "services"]
+license:
+  - GPL-3.0-only
+tags:
+  - linux
+  - monitoring
+  - networking
+  - tools
 dependencies:
-  "community.docker": ">=3.4.3"
+  community.docker: '>=3.4.3'
 
-# The URL of the originating SCM repository
 repository: https://github.com/flyoverhead/docker-services
-
-# The URL to the collection issue tracker
 issues: https://github.com/flyoverhead/docker-services/issues

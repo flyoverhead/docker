@@ -1,0 +1,8 @@
+---
+
+docker_path: /opt/docker
+docker_users:
+  - vagrant
+docker_restart_policy: always
+docker_network_mode: host
+docker_timezone: Europe/Moscow
