@@ -17,5 +17,5 @@ tags:
 dependencies:
   community.docker: '>=3.4.3'
 
-repository: https://github.com/flyoverhead/docker-services
-issues: https://github.com/flyoverhead/docker-services/issues
+repository: https://github.com/flyoverhead/docker
+issues: https://github.com/flyoverhead/docker/issues
