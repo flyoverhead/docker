@@ -19,7 +19,7 @@
     limit_type: '{{ item.1.type }}'
     limit_item: '{{ item.0.limit }}'
     value: '{{ item.1.value }}'
-  loop: '{{ xray_system_limits | d([]) | subelements("types", skip_missing=true) }}'
+  loop: '{{ xray_system_limits | default([]) | subelements("types", skip_missing=true) }}'
   loop_control:
     label: '{{ item.0.domain }} {{ item.1.type }} {{ item.0.limit }} {{ item.1.value }}'
   when:
@@ -57,8 +57,9 @@
     - name: config | add server keys to config
       ansible.builtin.set_fact:
         xray_server_config: >-
-          {{ xray_server_config | combine({"private_key": xray_server_config.private_key | default(xray_private_key)},
-          {"public_key": xray_server_config.public_key | default(xray_public_key)}) }}
+          {{ xray_server_config |
+          combine({'private_key': xray_server_config.private_key | default(xray_private_key)},
+          {'public_key': xray_server_config.public_key | default(xray_public_key)}) }}
 
     - name: config | add server private key to env
       become: true
@@ -79,8 +80,9 @@
       no_log: true
 
 - name: config | generate clients secrets
-  when:
-    - xray_new_clients | default([]) | length > 0
+  when: >-
+    xray_new_clients | default([]) | length > 0 or
+    xray_force_update_secrets
   block:
 
     - name: config | generate new clients list
@@ -90,7 +92,15 @@
     - name: config | add new clients to server configuration
       ansible.builtin.set_fact:
         xray_server_config: >-
-          {{ xray_server_config | combine({"clients": xray_generated_clients}) }}
+          {{ xray_server_config | combine({'clients': xray_generated_clients}) }}
+
+- name: config | read database file
+  become: true
+  ansible.builtin.slurp:
+    src: '{{ xray_path }}/database'
+  register: slurp_database_file
+  when:
+    - xray_generated_clients | default([]) | length > 0
 
 - name: config | create server configuration
   when:
@@ -99,8 +109,12 @@
 
     - name: config | get server keys
       ansible.builtin.set_fact:
-        xray_private_key: '{{ slurp_database_file.content | b64decode | regex_search("(?<=xray_private_key=).*", multiline=True) }}'
-        xray_public_key: '{{ slurp_database_file.content | b64decode | regex_search("(?<=xray_public_key=).*", multiline=True) }}'
+        xray_private_key: >-
+          {{ slurp_database_file.content | b64decode |
+          regex_search('(?<=xray_private_key=).*', multiline=True) }}
+        xray_public_key: >-
+          {{ slurp_database_file.content | b64decode |
+          regex_search('(?<=xray_public_key=).*', multiline=True) }}
       when:
         - slurp_database_file.content is defined
 
@@ -147,8 +161,10 @@
     - name: detect | register database file content
       ansible.builtin.set_fact:
         database_file_content: >-
-          {{ slurp_database_file.content | b64decode | regex_replace("(_short)*_id|=.*", "") | split | unique
-          if database_file.stat.exists else database_file_content | default([]) }}
+          {{ slurp_database_file.content | b64decode |
+          regex_replace('(_short)*_id|=.*', '') | split | unique
+          if database_file.stat.exists else
+          database_file_content | default([]) }}
       no_log: true
 
     - name: config | clean database file

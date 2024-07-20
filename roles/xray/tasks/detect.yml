@@ -11,7 +11,10 @@
 
 - name: detect | xray container update fact
   ansible.builtin.set_fact:
-    xray_container_update: '{{ true if xray_container.exists and xray_tag not in xray_container.container.Config.Image else false }}'
+    xray_container_update: >-
+      {{ true if
+      xray_container.exists and xray_tag not in xray_container.container.Config.Image
+      else false }}
 
 - name: detect | check database file
   ansible.builtin.stat:
@@ -29,15 +32,19 @@
 - name: detect | register database file content
   ansible.builtin.set_fact:
     database_file_content: >-
-      {{ slurp_database_file.content | b64decode | regex_replace("(_short)*_id|=.*", "") | split | unique
-      if database_file.stat.exists else database_file_content | default([]) }}
+      {{ slurp_database_file.content | b64decode |
+      regex_replace('(_short)*_id|=.*', '') | split | unique
+      if database_file.stat.exists else
+      database_file_content | default([]) }}
   no_log: true
 
 - name: detect | set generate_xray_keys fact
   ansible.builtin.set_fact:
     generate_xray_keys: >-
-      {{ true if "xray_private_key" not in database_file_content or
-      "xray_public_key" not in database_file_content else false }}
+      {{ true if
+      'xray_private_key' not in database_file_content or
+      'xray_public_key' not in database_file_content
+      else false }}
 
 - name: detect | set xray_new_clients fact
   ansible.builtin.set_fact:

@@ -3,9 +3,13 @@
 - name: client | get current secrets
   ansible.builtin.set_fact:
     current_client_id: >-
-      {{ slurp_database_file.content | b64decode | regex_search("(?<=" + item.name + "_id=).*", multiline=True) }}
+      {{ slurp_database_file.content | b64decode |
+      regex_search('(?<=' + item.name + '_id=).*',
+      multiline=True) }}
     current_client_short_id: >-
-      {{ slurp_database_file.content | b64decode | regex_search("(?<=" + item.name + "_short_id=).*", multiline=True) }}
+      {{ slurp_database_file.content | b64decode |
+      regex_search('(?<=' + item.name + '_short_id=).*',
+      multiline=True) }}
   when:
     - slurp_database_file.content is defined
 
@@ -47,15 +51,17 @@
       current_client_id if current_client_id | default([]) | length > 0 else
       generated_client_id }}
     client_short_id: >-
-      {{ item.short_id if item.short_id | default([]) | length > 0 else
-      current_client_short_id if current_client_short_id | default([]) | length > 0 else
+      {{ item.short_id if
+      item.short_id | default([]) | length > 0 else
+      current_client_short_id if
+      current_client_short_id | default([]) | length > 0 else
       generated_client_short_id }}
 
 - name: client | add secrets to client's config
   ansible.builtin.set_fact:
     xray_generated_clients: >-
       {{ xray_generated_clients | default([]) + [item |
-      combine({"id": client_id}, {"short_id": client_short_id})] }}
+      combine({'id': client_id}, {'short_id': client_short_id})] }}
 
 - name: config | add client id to database
   become: true
