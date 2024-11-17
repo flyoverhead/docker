@@ -6,4 +6,4 @@
 
 - name: detect | docker installed fact
   ansible.builtin.set_fact:
-    docker_installed: '{{ true if "docker-ce" in ansible_facts.packages else false }}'
+    docker_installed: "{{ true if 'docker-ce' in ansible_facts.packages else false }}"

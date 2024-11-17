@@ -10,19 +10,12 @@ Custom messages templates can be added by placing templates files to `files` dir
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
-| `alertmanager_name` | Alertmanager service name (used for container's and folder's names) | `alertmanager` |
-| `alertmanager_image` | Alertmanager docker image name | `prom/alertmanager` |
-| `alertmanager_tag` | Alertmanager docker image version tag | `v0.26.0` |
-| `alertmanager_listening_address` | Alertmanager listening address | `127.0.0.1` |
-| `alertmanager_listening_port` | Alertmanager listening port | `9093` |
-| `alertmanager_command` | Alertmanager service starting options | `[--config.file=/etc/alertmanager/alertmanager.yml]` |
-| `alertmanager_global_config` | List of Alertmanager global configuration parameters | `Example below` |
-| `alertmanager_route_config` | List of Alertmanager route configuration parameters | `Example below` |
-| `alertmanager_receivers_config` | List of Alertmanager recievers configuration parameters | `Example below` |
-| `alertmanager_path` | Path to service files | `/opt/docker/alertmanager` |
-| `alertmanager_restart_policy` | Service container restart policy | `always` |
-| `alertmanager_network_mode` | Service container network mode | `host` |
-| `alertmanager_timezone` | Default timezone for docker service | `Europe/Moscow` |
+| `alertmanager_docker_config` | Docker configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `alertmanager_service_config` | Service configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `alertmanager_command` | Service start options | `[--config.file=/etc/alertmanager/alertmanager.yml]` |
+| `alertmanager_global_config` | Global configuration parameters | `Example below` |
+| `alertmanager_route_config` | Route configuration parameters | `Example below` |
+| `alertmanager_receivers_config` | Recievers configuration parameters | `Example below` |
 
 ## Dependencies
 
@@ -35,7 +28,7 @@ Custom messages templates can be added by placing templates files to `files` dir
 ## Example playbook
 
 ```yaml
-- hosts: host
+- hosts: docker
   roles:
       - role: flyoverhead.docker.alertmanager
 ```
@@ -75,7 +68,7 @@ alertmanager_receivers_config:
 
 ## License
 
-Apache-2.0
+GPL-3.0-only
 
 ## Author Information
 

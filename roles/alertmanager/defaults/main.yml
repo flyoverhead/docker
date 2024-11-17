@@ -1,19 +1,25 @@
 ---
 
 # https://prometheus.io/docs/alerting/latest/alertmanager/
-# https://hub.docker.com/r/prom/alertmanager
-alertmanager_name: alertmanager
-alertmanager_image: prom/alertmanager
-alertmanager_tag: v0.27.0
-alertmanager_listening_address: 127.0.0.1
-alertmanager_listening_port: 9093
-alertmanager_path: /opt/docker/alertmanager
-alertmanager_restart_policy: always
-alertmanager_network_mode: host
-alertmanager_timezone: Europe/Moscow
+# https://hub.docker.com/r/prom/alertmanager/tags
+
+alertmanager_docker_config:
+  name: alertmanager
+  image: prom/alertmanager
+  tag: '{{ alertmanager_version }}'
+  path: '{{ docker_path }}/alertmanager'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+alertmanager_service_config:
+  listening_address: 0.0.0.0
+  listening_port: 9093
 
 alertmanager_command:
-  - --web.listen-address={{ alertmanager_listening_address }}:{{ alertmanager_listening_port }}
+  - >-
+    --web.listen-address={{ alertmanager_service_config.listening_address
+    }}:{{ alertmanager_service_config.listening_port }}
   - --config.file=/etc/alertmanager/alertmanager.yml
 
 alertmanager_global_config:

@@ -3,38 +3,12 @@
 global:
   {{ prometheus_global_config | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
 
-{% if prometheus_alert_jobs | length %}
 alerting:
   alertmanagers:
     {{ prometheus_alert_jobs | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(4) }}
 
 rule_files:
 - alerts/*.yml
-{% endif %}
 
 scrape_configs:
-  {% if prometheus_scrape_jobs | length %}
   {{ prometheus_scrape_jobs | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
-  {% else %}
-
-- job_name: alertmanager
-  scrape_interval: 1m
-  static_configs:
-  - targets:
-    - {{ ansible_host }}:{{ alertmanager_listening_port }}
-    labels:
-      instance: {{ ansible_hostname }}
-
-- job_name: node-exporter
-  scrape_interval: 1m
-  static_configs:
-  {{ node_exporter_targets | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
-
-- job_name: prometheus
-  scrape_interval: 1m
-  static_configs:
-  - targets:
-    - {{ ansible_host }}:{{ prometheus_listening_port }}
-    labels:
-      instance: {{ ansible_hostname }}
-  {% endif %}

@@ -1,0 +1,8 @@
+---
+
+docker_network_mode: host
+docker_path: /opt/docker
+docker_restart_policy: always
+docker_timezone: Europe/Moscow
+docker_users:
+  - '{{ ansible_user }}'

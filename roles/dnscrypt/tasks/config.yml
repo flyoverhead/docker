@@ -8,7 +8,7 @@
     enabled: false
     masked: true
   when:
-    - dnscrypt_listening_port == 5353
+    - dnscrypt_service_config.listening_port == 5353
     - '"avahi-daemon" in services'
   loop:
     - avahi-daemon.service
@@ -18,17 +18,17 @@
   become: true
   ansible.posix.sysctl:
     name: '{{ item }}'
-    value: '{{ 0 if dnscrypt_ipv6_servers else 1 }}'
+    value: '{{ 0 if dnscrypt_service_config.ipv6_servers else 1 }}'
     sysctl_set: true
   loop: '{{ dnscrypt_sysctl_config_ipv6 }}'
   loop_control:
-    label: '{{ item }} value set to {{ 0 if dnscrypt_ipv6_servers else 1 }}'
+    label: '{{ item }} value set to {{ 0 if dnscrypt_service_config.ipv6_servers else 1 }}'
 
 - name: config | dnscrypt configuration file
   become: true
   ansible.builtin.template:
     src: dnscrypt-proxy.toml.j2
-    dest: '{{ dnscrypt_path }}/dnscrypt-proxy.toml'
+    dest: '{{ dnscrypt_docker_config.path }}/dnscrypt-proxy.toml'
     mode: '0644'
     lstrip_blocks: true
   notify:

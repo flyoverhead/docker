@@ -1,29 +1,18 @@
 ---
 
-- name: client | get current secrets
-  ansible.builtin.set_fact:
-    current_client_id: >-
-      {{ slurp_database_file.content | b64decode |
-      regex_search('(?<=' + item.name + '_id=).*',
-      multiline=True) }}
-    current_client_short_id: >-
-      {{ slurp_database_file.content | b64decode |
-      regex_search('(?<=' + item.name + '_short_id=).*',
-      multiline=True) }}
-  when:
-    - slurp_database_file.content is defined
-
 - name: client | generate secrets
-  when:
-    - current_client_id | default('') | length == 0
-    - current_client_short_id | default('') | length == 0
+  when: >-
+    (item.id | default('') | length == 0
+    and
+    item.short_id | default('') | length == 0)
+    or xray_force_update_secrets
   block:
 
     - name: client | generate id
       become: true
       community.docker.docker_container:
-        name: '{{ xray_name }}'
-        image: '{{ xray_image }}:{{ xray_tag }}'
+        name: '{{ xray_docker_config.name }}'
+        image: '{{ xray_docker_config.image }}:{{ xray_docker_config.tag }}'
         cleanup: true
         command: xray uuid
         detach: false
@@ -47,36 +36,16 @@
 - name: client | set id and short id facts
   ansible.builtin.set_fact:
     client_id: >-
-      {{ item.id if item.id | default([]) | length > 0 else
-      current_client_id if current_client_id | default([]) | length > 0 else
-      generated_client_id }}
+      {{ generated_client_id if
+      generated_client_id | default([]) | length > 0
+      else item.id }}
     client_short_id: >-
-      {{ item.short_id if
-      item.short_id | default([]) | length > 0 else
-      current_client_short_id if
-      current_client_short_id | default([]) | length > 0 else
-      generated_client_short_id }}
+      {{ generated_client_short_id if
+      generated_client_short_id | default([]) | length > 0
+      else item.short_id }}
 
-- name: client | add secrets to client's config
+- name: client | add secrets to clients config
   ansible.builtin.set_fact:
-    xray_generated_clients: >-
-      {{ xray_generated_clients | default([]) + [item |
-      combine({'id': client_id}, {'short_id': client_short_id})] }}
-
-- name: config | add client id to database
-  become: true
-  ansible.builtin.lineinfile:
-    dest: '{{ xray_path }}/database'
-    regexp: '{{ item.name }}_id='
-    line: '{{ item.name }}_id={{ client_id }}'
-    state: present
-  no_log: true
-
-- name: config | add client short id to databse
-  become: true
-  ansible.builtin.lineinfile:
-    dest: '{{ xray_path }}/database'
-    regexp: '{{ item.name }}_short_id='
-    line: '{{ item.name }}_short_id={{ client_short_id }}'
-    state: present
-  no_log: true
+    xray_add_clients: >-
+      {{ xray_add_clients | default([]) + [item |
+      combine({'id': client_id, 'short_id': client_short_id})] }}

@@ -1,19 +1,19 @@
 ---
 
 services:
-  {{ alertmanager_name }}:
-    image: {{ alertmanager_image }}:{{ alertmanager_tag }}
-    container_name: {{ alertmanager_name }}
-    restart: {{ alertmanager_restart_policy }}
+  {{ alertmanager_docker_config.name }}:
+    image: {{ alertmanager_docker_config.image }}:{{ alertmanager_docker_config.tag }}
+    container_name: {{ alertmanager_docker_config.name }}
+    restart: {{ alertmanager_docker_config.restart_policy }}
     environment:
-      - TZ={{ alertmanager_timezone }}
+      - TZ={{ alertmanager_docker_config.timezone }}
     volumes:
-      - {{ alertmanager_path }}:/etc/alertmanager
+      - {{ alertmanager_docker_config.path }}:/etc/alertmanager
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if alertmanager_network_mode == "bridge" %}
+{% if alertmanager_docker_config.network_mode == 'bridge' %}
     ports:
-      - "{{ alertmanager_listening_port }}:{{ alertmanager_listening_port }}"
+      - "{{ alertmanager_service_config.listening_port }}:{{ alertmanager_service_config.listening_port }}"
 {% endif %}
-    network_mode: {{ alertmanager_network_mode }}
+    network_mode: {{ alertmanager_docker_config.network_mode }}
     command: {{ alertmanager_command | list }}

@@ -1,14 +1,14 @@
 ---
 
 services:
-  {{ torrserver_name }}:
-    image: {{ torrserver_image }}:{{ torrserver_tag }}
-    container_name: {{ torrserver_name }}
-    restart: {{ torrserver_restart_policy }}
+  {{ torrserver_docker_config.name }}:
+    image: {{ torrserver_docker_config.image }}:{{ torrserver_docker_config.tag }}
+    container_name: {{ torrserver_docker_config.name }}
+    restart: {{ torrserver_docker_config.restart_policy }}
     environment:
-      - TS_PORT={{ torrserver_port }}
-      - TZ={{ torrserver_timezone }}
+      - TS_PORT={{ torrserver_service_config.listening_port }}
+      - TZ={{ torrserver_docker_config.timezone }}
     volumes:
-      - {{ torrserver_path }}/db:/TS/db
-    network_mode: {{ torrserver_network_mode }}
+      - {{ torrserver_docker_config.path }}/db:/TS/db
+    network_mode: {{ torrserver_docker_config.network_mode }}
     shm_size: 256m

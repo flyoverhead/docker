@@ -3,7 +3,7 @@
 - name: config | grafana datasources and dashboards folders
   become: true
   ansible.builtin.file:
-    path: '{{ grafana_path }}/provisioning/{{ item }}'
+    path: '{{ grafana_docker_config.path }}/provisioning/{{ item }}'
     state: directory
     mode: '0755'
   loop:
@@ -14,7 +14,7 @@
   become: true
   ansible.builtin.template:
     src: '{{ item }}.j2'
-    dest: '{{ grafana_path }}/provisioning/{{ item }}/{{ item }}.yaml'
+    dest: '{{ grafana_docker_config.path }}/provisioning/{{ item }}/{{ item }}.yaml'
     mode: '0644'
     lstrip_blocks: true
   loop:
@@ -26,7 +26,7 @@
 - name: config | grafana datasources and dashboards folders
   become: true
   ansible.builtin.file:
-    path: '{{ grafana_path }}/dashboards'
+    path: '{{ grafana_docker_config.path }}/dashboards'
     state: directory
     mode: '0755'
 
@@ -34,7 +34,7 @@
   become: true
   ansible.builtin.get_url:
     url: https://grafana.com/api/dashboards/{{ item.dashboard_id }}/revisions/{{ item.revision_id }}/download
-    dest: '{{ grafana_path }}/dashboards/{{ item.name }}_{{ item.dashboard_id }}.json'
+    dest: '{{ grafana_docker_config.path }}/dashboards/{{ item.name }}_{{ item.dashboard_id }}.json'
     mode: '0644'
   loop: '{{ grafana_dashboards }}'
   loop_control:

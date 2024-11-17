@@ -1,7 +1,7 @@
 ---
 
 - name: test | deploy services
-  hosts: all
+  hosts: docker
 
   roles:
 
@@ -9,25 +9,22 @@
       when: '"node_exporter" in group_names'
 
     - role: prometheus
-      when: '"node_exporter" in group_names'
+      when: '"prometheus" in group_names'
 
     - role: alertmanager
-      when: '"node_exporter" in group_names'
+      when: '"alertmanager" in group_names'
 
     - role: grafana
-      when: '"node_exporter" in group_names'
+      when: '"grafana" in group_names'
 
     - role: dnscrypt
-      when: '"node_exporter" in group_names'
+      when: '"dnscrypt" in group_names'
 
     - role: pihole
-      when: '"node_exporter" in group_names'
-
-    - role: xray
-      when: '"node_exporter" in group_names'
-
-    - role: wireguard
-      when: '"node_exporter" in group_names'
+      when: '"pihole" in group_names'
 
     - role: torrserver
-      when: '"node_exporter" in group_names'
+      when: '"torrserver" in group_names'
+
+    - role: xray
+      when: '"xray" in group_names'

@@ -1,178 +1,103 @@
 ---
 
-- name: config | kernel parameters
-  become: true
-  ansible.posix.sysctl:
-    name: '{{ item.key }}'
-    value: '{{ item.value }}'
-    state: present
-  loop: '{{ xray_server_socks_tuning_config | dict2items }}'
-  loop_control:
-    label: '{{ item.key }} is set to {{ item.value }}'
-  when:
-    - xray_server_socks_tuning
+- name: config | server tuning
+  block:
 
-- name: config | nofile limits
-  become: true
-  community.general.pam_limits:
-    domain: '{{ item.0.domain }}'
-    limit_type: '{{ item.1.type }}'
-    limit_item: '{{ item.0.limit }}'
-    value: '{{ item.1.value }}'
-  loop: '{{ xray_system_limits | default([]) | subelements("types", skip_missing=true) }}'
-  loop_control:
-    label: '{{ item.0.domain }} {{ item.1.type }} {{ item.0.limit }} {{ item.1.value }}'
-  when:
-    - xray_server_socks_tuning
+    - name: config | kernel parameters
+      become: true
+      ansible.posix.sysctl:
+        name: '{{ item.key }}'
+        value: '{{ item.value }}'
+        state: present
+      loop: '{{ xray_tuning_config | dict2items }}'
+      loop_control:
+        label: '{{ item.key }} is set to {{ item.value }}'
+      when:
+        - xray_tuning_config.enabled
+        - item.key != 'enabled'
+        - item.key != 'system_limits'
+
+    - name: config | nofile limits
+      become: true
+      community.general.pam_limits:
+        domain: '{{ item.0.domain }}'
+        limit_type: '{{ item.1.type }}'
+        limit_item: '{{ item.0.limit }}'
+        value: '{{ item.1.value }}'
+      loop: >-
+        {{ xray_tuning_config.system_limits |
+        subelements('types', skip_missing=true) }}
+      loop_control:
+        label: '{{ item.0.domain }} {{ item.1.type }} {{ item.0.limit }} {{ item.1.value }}'
+      when:
+        - xray_tuning_config.enabled
 
 - name: config | block regex list
   ansible.builtin.set_fact:
-    block_domain_regex: '{{ ["regex:"] | product(lookup("file", "block_regex.list").splitlines()) | map("join") | list }}'
+    block_domain_regex: >-
+      {{ ['regex:'] |
+      product(lookup('file', 'block_regex.list').splitlines()) |
+      map('join') |
+      list }}
 
-- name: config | generate server secrets
-  when:
-    - xray_force_update_secrets or generate_xray_keys
+- name: config | server secrets
   block:
 
-    - name: config | generate server keys
-      become: true
-      community.docker.docker_container:
-        name: '{{ xray_name }}'
-        image: '{{ xray_image }}:{{ xray_tag }}'
-        cleanup: true
-        command: xray x25519
-        detach: false
-      register: xray_keys
-
-    - name: config | set server keys output fact
-      ansible.builtin.set_fact:
-        xray_keys: "{{ xray_keys.container.Output | trim | split('\n') }}"
-
-    - name: config | set server keys fact
-      ansible.builtin.set_fact:
-        xray_private_key: "{{ xray_keys | select('match', 'Private') | join('\n') | regex_replace('^.*:\\s', '') }}"
-        xray_public_key: "{{ xray_keys | select('match', 'Public') | join('\n') | regex_replace('^.*:\\s', '') }}"
-      no_log: true
+    - name: config | generate server secrets
+      ansible.builtin.include_tasks:
+        file: server.yml
+      when: >-
+        not xray_server_keys_exists
+        or xray_force_update_secrets
 
     - name: config | add server keys to config
       ansible.builtin.set_fact:
-        xray_server_config: >-
-          {{ xray_server_config |
-          combine({'private_key': xray_server_config.private_key | default(xray_private_key)},
-          {'public_key': xray_server_config.public_key | default(xray_public_key)}) }}
-
-    - name: config | add server private key to env
-      become: true
-      ansible.builtin.lineinfile:
-        dest: '{{ xray_path }}/database'
-        regexp: ^xray_private_key=
-        line: xray_private_key={{ xray_server_config.private_key | default(xray_private_key) }}
-        state: present
-      no_log: true
-
-    - name: config | add server public key to env
-      become: true
-      ansible.builtin.lineinfile:
-        dest: '{{ xray_path }}/database'
-        regexp: ^xray_public_key=
-        line: xray_public_key={{ xray_server_config.public_key | default(xray_public_key) }}
-        state: present
-      no_log: true
+        xray_service_config: >-
+          {{ xray_service_config |
+          combine({'private_key': xray_private_key},
+          {'public_key': xray_public_key}) }}
 
 - name: config | generate clients secrets
-  when: >-
-    xray_new_clients | default([]) | length > 0 or
-    xray_force_update_secrets
   block:
 
-    - name: config | generate new clients list
-      ansible.builtin.include_tasks: client.yml
-      loop: '{{ xray_clients }}'
+    - name: config | generate clients
+      ansible.builtin.include_tasks:
+        file: client.yml
+      loop: '{{ xray_new_clients | default([]) }}'
+      loop_control:
+        index_var: xray_client
 
-    - name: config | add new clients to server configuration
+    - name: config | set xray_all_clients fact
       ansible.builtin.set_fact:
-        xray_server_config: >-
-          {{ xray_server_config | combine({'clients': xray_generated_clients}) }}
-
-- name: config | read database file
-  become: true
-  ansible.builtin.slurp:
-    src: '{{ xray_path }}/database'
-  register: slurp_database_file
-  when:
-    - xray_generated_clients | default([]) | length > 0
+        xray_all_clients: >-
+          {{ (xray_active_clients | default([]) |
+          difference(xray_inactive_clients | default([]))) +
+          xray_add_clients | default([]) | sort(attribute='name') }}
 
 - name: config | create server configuration
-  when:
-    - xray_generated_clients | default([]) | length > 0
-  block:
-
-    - name: config | get server keys
-      ansible.builtin.set_fact:
-        xray_private_key: >-
-          {{ slurp_database_file.content | b64decode |
-          regex_search('(?<=xray_private_key=).*', multiline=True) }}
-        xray_public_key: >-
-          {{ slurp_database_file.content | b64decode |
-          regex_search('(?<=xray_public_key=).*', multiline=True) }}
-      when:
-        - slurp_database_file.content is defined
-
-    - name: config | create server configuration
-      become: true
-      ansible.builtin.template:
-        src: server.j2
-        dest: '{{ xray_path }}/config.json'
-        mode: '0644'
-        lstrip_blocks: true
-      notify:
-        - xray | restart container
+  become: true
+  ansible.builtin.template:
+    src: server.j2
+    dest: '{{ xray_docker_config.path }}/config.json'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - xray | restart container
 
 - name: config | create client configuration
   delegate_to: localhost
   ansible.builtin.template:
     src: client.j2
-    dest: '{{ playbook_dir }}/{{ item.name }}.json'
+    dest: '{{ xray_clients_config.path }}/{{ item.name }}.json'
     mode: '0644'
     lstrip_blocks: true
-  loop: '{{ xray_generated_clients | default([]) }}'
+  loop: '{{ xray_all_clients }}'
   loop_control:
     label: '{{ item.name }}'
-  when:
-    - xray_generated_clients | default([]) | length > 0
 
 - name: config | create geofiles
-  ansible.builtin.include_tasks: geofile.yml
+  ansible.builtin.include_tasks:
+    file: geofile.yml
   loop: '{{ xray_geofiles }}'
   loop_control:
     loop_var: geofile
-  when:
-    - xray_geofiles | length > 0
-
-- name: config | clean database file
-  block:
-
-    - name: detect | read database file
-      become: true
-      ansible.builtin.slurp:
-        src: '{{ xray_path }}/database'
-      register: slurp_database_file
-
-    - name: detect | register database file content
-      ansible.builtin.set_fact:
-        database_file_content: >-
-          {{ slurp_database_file.content | b64decode |
-          regex_replace('(_short)*_id|=.*', '') | split | unique
-          if database_file.stat.exists else
-          database_file_content | default([]) }}
-      no_log: true
-
-    - name: config | clean database file
-      become: true
-      ansible.builtin.lineinfile:
-        path: '{{ xray_path }}/database'
-        regexp: ^{{ item }}
-        state: absent
-      loop: '{{ database_file_content | difference(xray_clients | map(attribute="name")) }}'
-      when:
-        - '"key" not in item'

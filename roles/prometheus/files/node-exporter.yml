@@ -186,17 +186,17 @@ groups:
             VALUE = {{ $value }}
             LABELS = {{ $labels }}
 
-      - alert: Host Cpu Is Under Utilized
-        expr: 100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20
-        for: 1w
-        labels:
-          severity: info
-        annotations:
-          summary: Host CPU is under utilized (instance {{ $labels.instance }})
-          description: |
-            CPU load is < 20% for 1 week. Consider reducing the number of CPUs.
-            VALUE = {{ $value }}
-            LABELS = {{ $labels }}
+      # - alert: Host Cpu Is Under Utilized
+      #   expr: 100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20
+      #   for: 1w
+      #   labels:
+      #     severity: info
+      #   annotations:
+      #     summary: Host CPU is under utilized (instance {{ $labels.instance }})
+      #     description: |
+      #       CPU load is < 20% for 1 week. Consider reducing the number of CPUs.
+      #       VALUE = {{ $value }}
+      #       LABELS = {{ $labels }}
 
       - alert: Host Cpu Steal Noisy Neighbor
         expr: avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10

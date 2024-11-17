@@ -1,26 +1,26 @@
 ---
 
 services:
-  {{ pihole_name }}:
-    image: {{ pihole_image }}:{{ pihole_tag }}
-    container_name: {{ pihole_name }}
-    restart: {{ pihole_restart_policy }}
+  {{ pihole_docker_config.name }}:
+    image: {{ pihole_docker_config.image }}:{{ pihole_docker_config.tag }}
+    container_name: {{ pihole_docker_config.name }}
+    restart: {{ pihole_docker_config.restart_policy }}
     environment:
-      - FTLCONF_LOCAL_IPV4={{ pihole_web_address }}
-      - WEB_PORT={{ pihole_web_port }}
-      - PIHOLE_DNS_={{ pihole_upstream_dns | join(';') }}
-      - DNSMASQ_LISTENING={{ pihole_dnsmasq_listening_address }}
-      - WEBPASSWORD={{ pihole_web_password }}
-      - DNSSEC={{ pihole_dnssec }}
-      - QUERY_LOGGING={{ pihole_query_logging }}
-      - DNS_BOGUS_PRIV={{ pihole_dns_bogus_priv }}
-      - DNS_FQDN_REQUIRED={{ pihole_dns_fqdn_required }}
-      - WEBTHEME={{ pihole_web_theme }}
-      - IPv6={{ pihole_ipv6_support }}
-      - TZ={{ pihole_timezone }}
+      - FTLCONF_LOCAL_IPV4={{ pihole_service_config.web_address }}
+      - WEB_PORT={{ pihole_service_config.web_port }}
+      - PIHOLE_DNS_={{ pihole_service_config.upstream_dns | join(';') }}
+      - DNSMASQ_LISTENING={{ pihole_service_config.dnsmasq_listening_address }}
+      - WEBPASSWORD={{ pihole_service_config.web_password }}
+      - DNSSEC={{ pihole_service_config.dnssec }}
+      - QUERY_LOGGING={{ pihole_service_config.query_logging }}
+      - DNS_BOGUS_PRIV={{ pihole_service_config.dns_bogus_priv }}
+      - DNS_FQDN_REQUIRED={{ pihole_service_config.dns_fqdn_required }}
+      - WEBTHEME={{ pihole_service_config.web_theme }}
+      - IPv6={{ pihole_service_config.ipv6_support }}
+      - TZ={{ pihole_docker_config.timezone }}
     volumes:
-      - {{ pihole_path }}/data:/etc/pihole
-      - {{ pihole_path }}/dnsmasq.d/data:/etc/dnsmasq.d
+      - {{ pihole_docker_config.path }}/data:/etc/pihole
+      - {{ pihole_docker_config.path }}/dnsmasq.d/data:/etc/dnsmasq.d
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     network_mode: host

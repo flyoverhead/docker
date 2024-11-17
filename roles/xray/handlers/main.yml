@@ -3,7 +3,7 @@
 - name: xray | start container
   become: true
   community.docker.docker_compose_v2:
-    project_src: '{{ xray_path }}'
+    project_src: '{{ xray_docker_config.path }}'
     state: present
     wait: true
     wait_timeout: 60
@@ -11,7 +11,7 @@
 - name: xray | restart container
   become: true
   community.docker.docker_compose_v2:
-    project_src: '{{ xray_path }}'
+    project_src: '{{ xray_docker_config.path }}'
     state: restarted
     wait: true
     wait_timeout: 60

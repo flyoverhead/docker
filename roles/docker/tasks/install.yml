@@ -1,6 +1,7 @@
 ---
 
 - name: install | clean unofficial packages
+  become: true
   ansible.builtin.apt:
     name: '{{ item }}'
     state: absent
@@ -22,20 +23,22 @@
 - name: install | dependencies
   become: true
   ansible.builtin.apt:
-    name: '{{ docker_required_packages }}'
+    name: '{{ docker_repo.requirements }}'
     state: present
+    update_cache: true
+    cache_valid_time: 3600
 
 - name: install | apt key
   become: true
   ansible.builtin.get_url:
-    url: '{{ docker_repo_key }}'
+    url: '{{ docker_repo.key }}'
     dest: /etc/apt/keyrings/docker
     mode: '0644'
 
 - name: install | repository
   become: true
   ansible.builtin.apt_repository:
-    repo: deb [signed-by=/etc/apt/keyrings/docker] {{ docker_repo_url }}
+    repo: deb [signed-by=/etc/apt/keyrings/docker] {{ docker_repo.url }}
     filename: docker
     state: present
     update_cache: true
@@ -43,5 +46,7 @@
 - name: install | packages
   become: true
   ansible.builtin.apt:
-    name: '{{ docker_packages }}'
+    name: '{{ docker_repo.packages }}'
     state: present
+    update_cache: true
+    cache_valid_time: 3600

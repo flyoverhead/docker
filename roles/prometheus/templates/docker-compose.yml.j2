@@ -1,19 +1,19 @@
 ---
 
 services:
-  {{ prometheus_name }}:
-    image: {{ prometheus_image }}:{{ prometheus_tag }}
-    container_name: {{ prometheus_name }}
-    restart: {{ prometheus_restart_policy }}
+  {{ prometheus_docker_config.name }}:
+    image: {{ prometheus_docker_config.image }}:{{ prometheus_docker_config.tag }}
+    container_name: {{ prometheus_docker_config.name }}
+    restart: {{ prometheus_docker_config.restart_policy }}
     environment:
-      - TZ={{ prometheus_timezone }}
+      - TZ={{ prometheus_docker_config.timezone }}
     volumes:
-      - {{ prometheus_path }}:/etc/prometheus
+      - {{ prometheus_docker_config.path }}:/etc/prometheus
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if prometheus_network_mode == "bridge" %}
+{% if prometheus_docker_config.network_mode == "bridge" %}
     ports:
-      - "{{ prometheus_listening_port }}:{{ prometheus_listening_port }}"
+      - "{{ prometheus_service_config.listening_port }}:{{ prometheus_service_config.listening_port }}"
 {% endif %}
-    network_mode: {{ prometheus_network_mode }}
+    network_mode: {{ prometheus_docker_config.network_mode }}
     command: {{ prometheus_command | list }}

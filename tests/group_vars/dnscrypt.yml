@@ -1,50 +1,10 @@
 ---
 
-dnscrypt_name: dnscrypt
-dnscrypt_image: klutchell/dnscrypt-proxy
-dnscrypt_tag: 2.1.5
-dnscrypt_path: '{{ docker_path }}/{{ dnscrypt_name }}'
-dnscrypt_restart_policy: '{{ docker_restart_policy }}'
-dnscrypt_network_mode: '{{ docker_network_mode }}'
-dnscrypt_timezone: '{{ docker_timezone }}'
-
-dnscrypt_listening_addresses:
-  - 0.0.0.0
-dnscrypt_listening_port: 5353
-
-dnscrypt_public_resolvers:
-  - ahadns-doh-nl
-  - ams-ads-doh-nl
-  - ams-dnscrypt-nl
-  - ams-doh-nl
-  - cs-nl
-  - cs-nl2
-  - dct-nl1
-  - meganerd
-  - meganerd-doh-ipv4
-  - scaleway-ams
-dnscrypt_ipv4_servers: true
-dnscrypt_ipv6_servers: false
-dnscrypt_public_servers: true
-dnscrypt_doh_servers: true
-dnscrypt_odoh_servers: true
-dnscrypt_anon_servers: true
-dnscrypt_quad_servers: true
-dnscrypt_dnssec_servers: true
-dnscrypt_nolog_servers: true
-dnscrypt_nofilter_servers: true
-dnscrypt_disabled_public_resolvers: []
-dnscrypt_upstream_servers:
-  - 1.1.1.1
-  - 8.8.8.8
-  - 9.9.9.9
-dnscrypt_netprobe_address: 9.9.9.9
-dnscrypt_block_unqualified: true
-dnscrypt_block_undelegated: true
-dnscrypt_dns_cache: true
-dnscrypt_dns_cache_size: 4096
-
-dnscrypt_sysctl_config_ipv6:
-  - net.ipv6.conf.all.disable_ipv6
-  - net.ipv6.conf.default.disable_ipv6
-  - net.ipv6.conf.lo.disable_ipv6
+dnscrypt_docker_config:
+  name: dnscrypt
+  image: klutchell/dnscrypt-proxy
+  tag: '{{ dnscrypt_version }}'
+  path: '{{ docker_path }}/dnscrypt'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'

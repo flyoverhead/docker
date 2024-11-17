@@ -2,7 +2,7 @@
 
 - name: node-exporter | start container
   community.docker.docker_compose_v2:
-    project_src: '{{ node_exporter_path }}'
+    project_src: '{{ node_exporter_docker_config.path }}'
     state: present
     wait: true
     wait_timeout: 60
@@ -10,7 +10,7 @@
 - name: node-exporter | restart container
   become: true
   community.docker.docker_compose_v2:
-    project_src: '{{ node_exporter_path }}'
+    project_src: '{{ node_exporter_docker_config.path }}'
     state: restarted
     wait: true
     wait_timeout: 60

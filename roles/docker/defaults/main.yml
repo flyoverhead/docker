@@ -1,25 +1,21 @@
 ---
 
-docker_repo_key: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
-docker_repo_url: https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} stable
-
-docker_packages:
-  - docker-ce
-  - docker-ce-cli
-  - containerd.io
-  - docker-buildx-plugin
-  - docker-compose-plugin
-
-docker_required_packages:
-  - apt-transport-https
-  - ca-certificates
-  - gnupg
-
-docker_path: /opt/docker
-
-docker_restart_policy: always
 docker_network_mode: host
+docker_path: /opt/docker
+docker_repo:
+  key: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+  url: https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} stable
+  packages:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-buildx-plugin
+    - docker-compose-plugin
+  requirements:
+    - apt-transport-https
+    - ca-certificates
+    - gnupg
+docker_restart_policy: always
 docker_timezone: Europe/Moscow
-
 docker_users:
   - '{{ ansible_user }}'

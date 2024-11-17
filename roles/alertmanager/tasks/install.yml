@@ -3,7 +3,7 @@
 - name: install | alertmanager service folder
   become: true
   ansible.builtin.file:
-    path: '{{ alertmanager_path }}'
+    path: '{{ alertmanager_docker_config.path }}'
     state: directory
     mode: '0755'
 
@@ -11,7 +11,7 @@
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
-    dest: '{{ alertmanager_path }}/docker-compose.yml'
+    dest: '{{ alertmanager_docker_config.path }}/docker-compose.yml'
     mode: '0644'
     lstrip_blocks: true
   notify:

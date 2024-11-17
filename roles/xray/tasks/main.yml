@@ -1,20 +1,38 @@
 ---
 
 - name: detect
-  ansible.builtin.include_tasks: detect.yml
+  ansible.builtin.include_tasks:
+    file: detect.yml
+  tags:
+    - xray.clients
+    - xray.docker
+    - xray.server
 
 - name: install
-  ansible.builtin.include_tasks: install.yml
+  ansible.builtin.include_tasks:
+    file: install.yml
+    apply:
+      tags:
+        - xray.docker
   when:
     - not xray_container_exists
+  tags:
+    - xray.docker
 
 - name: update
-  ansible.builtin.include_tasks: update.yml
+  ansible.builtin.include_tasks:
+    file: update.yml
   when:
     - xray_container_update
+  tags:
+    - xray.docker
 
 - name: config
-  ansible.builtin.include_tasks: config.yml
+  ansible.builtin.include_tasks:
+    file: config.yml
+  tags:
+    - xray.docker
+    - xray.tuning
 
 - name: handlers
   ansible.builtin.meta: flush_handlers

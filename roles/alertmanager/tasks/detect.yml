@@ -2,7 +2,7 @@
 
 - name: detect | alertmanager container
   community.docker.docker_container_info:
-    name: '{{ alertmanager_name }}'
+    name: '{{ alertmanager_docker_config.name }}'
   register: alertmanager_container
 
 - name: detect | alertmanager container exists fact
@@ -11,5 +11,8 @@
 
 - name: detect | alertmanager container update fact
   ansible.builtin.set_fact:
-    alertmanager_container_update: >
-      {{ true if alertmanager_container.exists and alertmanager_tag not in alertmanager_container.container.Config.Image else false }}
+    alertmanager_container_update: >-
+      {{ true if
+      alertmanager_container.exists and
+      alertmanager_docker_config.tag not in alertmanager_container.container.Config.Image
+      else false }}

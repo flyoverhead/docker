@@ -1,57 +1,113 @@
 ---
 
-- name: detect | xray container
-  community.docker.docker_container_info:
-    name: '{{ xray_name }}'
-  register: xray_container
+- name: detect | xray docker
+  tags:
+    - xray.docker
+  block:
 
-- name: detect | xray container exists fact
-  ansible.builtin.set_fact:
-    xray_container_exists: '{{ true if xray_container.exists else false }}'
+    - name: detect | xray container
+      community.docker.docker_container_info:
+        name: '{{ xray_docker_config.name }}'
+      register: xray_container
 
-- name: detect | xray container update fact
-  ansible.builtin.set_fact:
-    xray_container_update: >-
-      {{ true if
-      xray_container.exists and xray_tag not in xray_container.container.Config.Image
-      else false }}
+    - name: detect | xray container exists fact
+      ansible.builtin.set_fact:
+        xray_container_exists: >-
+          {{ true if
+          xray_container.exists
+          else false }}
 
-- name: detect | check database file
-  ansible.builtin.stat:
-    path: '{{ xray_path }}/database'
-  register: database_file
+    - name: detect | xray container update fact
+      ansible.builtin.set_fact:
+        xray_container_update: >-
+          {{ true if
+          xray_container.exists and
+          xray_docker_config.tag not in xray_container.container.Config.Image
+          else false }}
 
-- name: detect | read database file
-  become: true
-  ansible.builtin.slurp:
-    src: '{{ xray_path }}/database'
-  register: slurp_database_file
-  when:
-    - database_file.stat.exists
+- name: detect | database
+  tags:
+    - xray.clients
+    - xray.server
+  block:
 
-- name: detect | register database file content
-  ansible.builtin.set_fact:
-    database_file_content: >-
-      {{ slurp_database_file.content | b64decode |
-      regex_replace('(_short)*_id|=.*', '') | split | unique
-      if database_file.stat.exists else
-      database_file_content | default([]) }}
-  no_log: true
+    - name: detect | check database file
+      ansible.builtin.stat:
+        path: '{{ xray_docker_config.path }}/config.json'
+      register: database_file
 
-- name: detect | set generate_xray_keys fact
-  ansible.builtin.set_fact:
-    generate_xray_keys: >-
-      {{ true if
-      'xray_private_key' not in database_file_content or
-      'xray_public_key' not in database_file_content
-      else false }}
+    - name: detect | read database file
+      become: true
+      ansible.builtin.slurp:
+        src: '{{ xray_docker_config.path }}/config.json'
+      register: slurp_database_file
+      when:
+        - database_file.stat.exists
 
-- name: detect | set xray_new_clients fact
-  ansible.builtin.set_fact:
-    xray_new_clients: >
-      {{ xray_new_clients | default([]) + [item] }}
-  loop: '{{ xray_clients }}'
-  loop_control:
-    label: '{{ item.name }}'
-  when:
-    - item.name not in database_file_content
+    - name: detect | register database file content
+      ansible.builtin.set_fact:
+        database_file_content: >-
+          {{ slurp_database_file.content | b64decode |
+          from_json | json_query("inbounds")
+          if database_file.stat.exists
+          else '' }}
+
+    - name: detect | set xray_private_key fact
+      ansible.builtin.set_fact:
+        xray_private_key: >-
+          {{ database_file_content |
+          selectattr('streamSettings', 'search', xray_service_config.vless_address) |
+          map(attribute='streamSettings.realitySettings.privateKey') | join('') }}
+
+    - name: detect | set xray_public_key fact
+      ansible.builtin.set_fact:
+        xray_public_key: >-
+          {{ database_file_content |
+          selectattr('streamSettings', 'search', xray_service_config.vless_address) |
+          map(attribute='streamSettings.realitySettings.publicKey') | join('') }}
+
+    - name: detect | set xray_server_keys_exists fact
+      ansible.builtin.set_fact:
+        xray_server_keys_exists: >-
+          {{ true if
+          xray_private_key | default('') | length > 0
+          and
+          xray_public_key | default('') | length > 0
+          else false }}
+
+    - name: detect | get xray database facts
+      when:
+        - database_file_content | length > 0
+      block:
+
+        - name: detect | set xray_active_clients fact
+          ansible.builtin.set_fact:
+            xray_active_clients: >-
+              {{ xray_active_clients | default([]) +
+              [item | combine({'short_id': (database_file_content |
+              map(attribute='streamSettings.realitySettings.shortIds') | flatten)[xray_client]},
+              {'protocol': (xray_clients_config.clients | selectattr('name', 'equalto', item.name) |
+              map(attribute='protocol') | join(''))})] }}
+          loop: >-
+            {{ database_file_content |
+            selectattr('streamSettings', 'search', xray_service_config.vless_address) |
+            map(attribute='settings.clients') | flatten }}
+          loop_control:
+            label: '{{ item.name }}'
+            index_var: xray_client
+
+        - name: detect | set xray_new_clients fact
+          ansible.builtin.set_fact:
+            xray_inactive_clients: >-
+              {{ xray_active_clients | default([]) |
+              rejectattr('name', 'in', xray_clients_config.clients | map(attribute='name')) }}
+
+    - name: detect | set xray_new_clients fact
+      ansible.builtin.set_fact:
+        xray_new_clients: >-
+          {{ xray_clients_config.clients
+          if
+          xray_force_update_secrets
+          else
+          xray_clients_config.clients |
+          rejectattr('name', 'in', xray_active_clients | default([]) | map(attribute='name')) }}

@@ -2,13 +2,13 @@
 {
   "inbounds": [
     {
-      "listen": "{{ xray_listening_address }}",
-      "port": "{{ xray_listening_port }}",
+      "listen": "{{ xray_service_config.listening_address }}",
+      "port": "{{ xray_service_config.listening_port }}",
       "protocol": "vless",
-      "tag": "{{ xray_server_config.tag }}",
+      "tag": "{{ xray_service_config.tag }}",
       "settings": {
         "clients": [
-        {% for client in xray_server_config.clients | default([]) %}
+        {% for client in xray_all_clients %}
           {
             "name": "{{ client.name }}",
             "id": "{{ client.id }}",
@@ -23,18 +23,19 @@
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "{{ xray_server_config.vless_address }}:{{ xray_listening_port }}",
+          "dest": "{{ xray_service_config.vless_address }}:{{ xray_service_config.listening_port }}",
           "xver": 0,
           "serverNames": [
-            "{{ xray_server_config.vless_address }}",
-            "www.{{ xray_server_config.vless_address }}"
+            "{{ xray_service_config.vless_address }}",
+            "www.{{ xray_service_config.vless_address }}"
           ],
-          "privateKey": "{{ xray_server_config.private_key }}",
+          "privateKey": "{{ xray_service_config.private_key }}",
+          "publicKey": "{{ xray_service_config.public_key }}",
           "minClientVer": "",
           "maxClientVer": "",
           "maxTimeDiff": 0,
           "shortIds": [
-            {% for client in xray_server_config.clients | default([]) %}
+            {% for client in xray_all_clients %}
             "{{ client.short_id }}"{{ "," if not loop.last }}
             {% endfor %}
           ]
@@ -60,89 +61,89 @@
   "routing": {
     "rules": [
       {
-{% if xray_server_config.block is defined and xray_server_config.block.keys() | default([]) | length > 0 %}
+{% if xray_service_config.block is defined and xray_service_config.block.keys() | default([]) | length > 0 %}
 {% set block_mode = true %}
-{% elif xray_server_config.direct is defined and xray_server_config.direct.keys() | default([]) | length > 0 %}
+{% elif xray_service_config.direct is defined and xray_service_config.direct.keys() | default([]) | length > 0 %}
 {% set direct_mode = true %}
-{% elif (xray_server_config.block is undefined or xray_server_config.block.keys() | default([]) | length == 0) and (xray_server_config.direct is undefined or xray_server_config.direct.keys() | default([]) | length == 0) %}
+{% elif (xray_service_config.block is undefined or xray_service_config.block.keys() | default([]) | length == 0) and (xray_service_config.direct is undefined or xray_service_config.direct.keys() | default([]) | length == 0) %}
 {% set block_mode = true %}
 {% endif %}
         {% if block_mode %}
-        "inboundTag": "{{ xray_server_config.tag }}",
+        "inboundTag": "{{ xray_service_config.tag }}",
         "outboundTag": "block",
         "type": "field",
         "domain": [
-          {% if xray_server_config.block.domain | default([]) | length > 0 %}
-          {% for domain in xray_server_config.block.domain %}
+          {% if xray_service_config.block.domain | default([]) | length > 0 %}
+          {% for domain in xray_service_config.block.domain %}
           "{{ domain }}",
           {% endfor %}
           {% endif %}
           {% for domain in block_domain_regex %}
           "{{ domain }}"{{ "," if not loop.last }}
           {% endfor %}
-        {% if xray_server_config.block.ip | default([]) | length > 0 %}
+        {% if xray_service_config.block.ip | default([]) | length > 0 %}
         ],
         "ip": [
-          {% for ip in xray_server_config.block.ip %}
+          {% for ip in xray_service_config.block.ip %}
           "{{ ip }}"{{ "," if not loop.last }}
           {% endfor %}
         {% endif %}
-        {% if xray_server_config.block.port | default([]) | length > 0 %}
+        {% if xray_service_config.block.port | default([]) | length > 0 %}
         ],
         "port": [
-          {% for port in xray_server_config.block.port %}
+          {% for port in xray_service_config.block.port %}
           "{{ port }}"{{ "," if not loop.last }}
           {% endfor %}
         {% endif %}
-        {% if xray_server_config.block.protocol | default([]) | length > 0 %}
+        {% if xray_service_config.block.protocol | default([]) | length > 0 %}
         ],
         "protocol": [
-          {% for protocol in xray_server_config.block.protocol %}
+          {% for protocol in xray_service_config.block.protocol %}
           "{{ protocol }}"{{ "," if not loop.last }}
           {% endfor %}
         {% endif %}
         ]
       },
       {
-        "inboundTag": "{{ xray_server_config.tag }}",
+        "inboundTag": "{{ xray_service_config.tag }}",
         "outboundTag": "direct",
         "type": "field"
       }
         {% elif direct_mode %}
-        "inboundTag": "{{ xray_server_config.tag }}",
+        "inboundTag": "{{ xray_service_config.tag }}",
         "outboundTag": "direct",
         "type": "field",
-        {% if xray_server_config.direct.domain | default([]) | length > 0 %}
+        {% if xray_service_config.direct.domain | default([]) | length > 0 %}
         "domain": [
-          {% for domain in xray_server_config.direct.domain %}
+          {% for domain in xray_service_config.direct.domain %}
           "{{ domain }}"{{ "," if not loop.last }}
           {% endfor %}
         {% endif %}
-        {% if xray_server_config.direct.ip | length > 0 %}
+        {% if xray_service_config.direct.ip | length > 0 %}
         ],
         "ip": [
-          {% for ip in xray_server_config.direct.ip %}
+          {% for ip in xray_service_config.direct.ip %}
           "{{ ip }}"{{ "," if not loop.last }}
           {% endfor %}
         {% endif %}
-        {% if xray_server_config.direct.port | default([]) | length > 0 %}
+        {% if xray_service_config.direct.port | default([]) | length > 0 %}
         ],
         "port": [
-          {% for port in xray_server_config.direct.port %}
+          {% for port in xray_service_config.direct.port %}
           "{{ port }}"{{ "," if not loop.last }}
           {% endfor %}
         {% endif %}
-        {% if xray_server_config.direct.protocol | default([]) | length > 0 %}
+        {% if xray_service_config.direct.protocol | default([]) | length > 0 %}
         ],
         "protocol": [
-          {% for protocol in xray_server_config.direct.protocol %}
+          {% for protocol in xray_service_config.direct.protocol %}
           "{{ protocol }}"{{ "," if not loop.last }}
           {% endfor %}
         {% endif %}
         ]
       },
       {
-        "inboundTag": "{{ xray_server_config.tag }}",
+        "inboundTag": "{{ xray_service_config.tag }}",
         "outboundTag": "block",
         "type": "field"
       }

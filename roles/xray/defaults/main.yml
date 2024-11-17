@@ -1,25 +1,26 @@
 ---
 
 # https://xtls.github.io/
-# https://hub.docker.com/r/teddysun/xray
-xray_name: xray
-xray_image: teddysun/xray
-xray_tag: 1.8.11
-xray_path: /opt/docker/xray
-xray_restart_policy: always
-xray_network_mode: host
-xray_timezone: Europe/Moscow
+# https://hub.docker.com/r/teddysun/xray/tags
 
-xray_listening_address: 0.0.0.0
-xray_listening_port: 443
-xray_public_address: '{{ ansible_host }}'
+xray_docker_config:
+  name: xray
+  image: teddysun/xray
+  tag: 24.11.11
+  path: '{{ docker_path }}/xray'
+  restart_policy: always
+  network_mode: host
+  timezone: Europe/Moscow
 
-xray_server_config:
+xray_service_config:
   name: '{{ inventory_hostname }}'
   tag: proxy
-  server_address: '{{ xray_public_address }}'
-  server_port: '{{ xray_listening_port }}'
-  vless_address: microsoft.com
+  listening_address: 0.0.0.0
+  listening_port: 8443
+  public_address: '{{ ansible_host }}'
+  vless_address: youtube.com
+  private_key: ''
+  public_key: ''
   block:
     domain: []
     ip: []
@@ -32,17 +33,50 @@ xray_server_config:
     protocol: []
   proxy:
     domain: []
+      # - ext:geosite_v2fly.dat:category-anticensorship
+      # - ext:geosite_v2fly.dat:category-dev
+      # - ext:geosite_v2fly.dat:google
+      # - ext:geosite_v2fly.dat:netflix
+      # - ext:geosite_v2fly.dat:youtube
+      # - ext:zkeen.dat:domains
+      # - ext:zkeen.dat:youtube
     ip: []
     port: []
     protocol: []
 
-xray_clients: []
+xray_clients_config:
+  path: '{{ playbook_dir }}' # save configuration files here
+  clients: []
+    # - name: router
+    #   protocol: dokodemo-door
+    # - name: smaptphone
+    #   protocol: socks
+
 xray_geofiles: []
+  # - name: geodata_antizapret
+  #   repo: warexify/antizapret-xray
+  #   file: antizapret.dat
+  # - name: geodata_v2fly
+  #   repo: v2fly/domain-list-community
+  #   file: dlc.dat
+  # - name: geoip_v2fly
+  #   repo: loyalsoldier/v2ray-rules-dat
+  #   file: geoip.dat
+  # - name: geosite_antizapret
+  #   repo: warexify/antizapret-xray
+  #   file: antizapret.dat
+  # - name: geosite_v2fly
+  #   repo: v2fly/domain-list-community
+  #   file: dlc.dat
+  # - name: zkeen
+  #   repo: jameszeroX/zkeen-domains
+  #   file: zkeen.dat
+  # - name: zkeenip
+  #   repo: jameszeroX/zkeen-ip
+  #   file: zkeenip.dat
 
-xray_force_update_secrets: false
-
-xray_server_socks_tuning: false
-xray_server_socks_tuning_config:
+xray_tuning_config:
+  enabled: true
   fs.file-max: 51200
   net.core.default_qdisc: fq
   net.ipv4.tcp_congestion_control: bbr
@@ -66,12 +100,13 @@ xray_server_socks_tuning_config:
   net.ipv4.tcp_wmem: 4096 65536 67108864
   net.ipv4.tcp_mtu_probing: 1
   net.ipv4.tcp_slow_start_after_idle: 0
+  system_limits:
+    - limit: nofile
+      domain: '*'
+      types:
+        - type: soft
+          value: 51200
+        - type: hard
+          value: 51200
 
-xray_system_limits:
-  - limit: nofile
-    domain: '*'
-    types:
-      - type: soft
-        value: 51200
-      - type: hard
-        value: 51200
+xray_force_update_secrets: false

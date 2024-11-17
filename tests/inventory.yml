@@ -1,40 +1,29 @@
 ---
 
-all:
+docker:
+  hosts:
+    host-01:
+alertmanager:
   children:
-    servers:
-      hosts:
-        server01:
-        server02:
-    clients:
-      hosts:
-        client01:
-        client02:
-    alertmanager:
-      children:
-        servers:
-    dnscrypt:
-      children:
-        servers:
-    grafana:
-      children:
-        servers:
-    node_exporter:
-      children:
-        servers:
-        clients:
-    pihole:
-      children:
-        servers:
-    prometheus:
-      children:
-        servers:
-    torrserver:
-      children:
-        servers:
-    wireguard:
-      children:
-        servers:
-    xray:
-      children:
-        servers:
+    docker:
+dnscrypt:
+  children:
+    docker:
+grafana:
+  children:
+    docker:
+node_exporter:
+  children:
+    docker:
+pihole:
+  children:
+    docker:
+prometheus:
+  children:
+    docker:
+torrserver:
+  children:
+    docker:
+xray:
+  children:
+    docker:

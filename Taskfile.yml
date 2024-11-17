@@ -6,30 +6,27 @@ silent: true
 
 tasks:
 
-  play:
-    dir: tests
-    cmds:
-      - ansible-playbook -i inventory.yml playbook.yml
-
-  reload:
-    dir: tests
-    cmds:
-      - ansible -i inventory.yml all -m ansible.builtin.reboot --become
-
-  start:
-    dir: tests
+  deploy:
     cmds:
       - vagrant up
       - task: play
 
-  stop:
-    dir: tests
+  destroy:
     cmds:
       - vagrant destroy -f
       - rm -rf .vagrant || True
 
-  update:
-    dir: tests
+  provision:
     cmds:
-      - vagrant box update
-      - vagrant box prune
+      - task: play
+
+  reload:
+    internal: true
+    cmds:
+      - ansible -i inventory.yml -m ansible.builtin.reboot --become
+
+  play:
+    dir: tests
+    internal: true
+    cmds:
+      - ansible-playbook -i inventory.yml playbook.yml

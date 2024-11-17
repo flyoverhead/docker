@@ -35,23 +35,23 @@
   become: true
   ansible.posix.sysctl:
     name: '{{ item }}'
-    value: '{{ 0 if pihole_ipv6_support else 1 }}'
+    value: '{{ 0 if pihole_service_config.ipv6_support else 1 }}'
     sysctl_set: true
   loop: '{{ pihole_sysctl_config_ipv6 }}'
   loop_control:
-    label: '{{ item }} value set to {{ 0 if pihole_ipv6_support else 1 }}'
+    label: '{{ item }} value set to {{ 0 if pihole_service_config.ipv6_support else 1 }}'
 
 - name: install | pihole service folder
   become: true
   ansible.builtin.file:
-    path: '{{ pihole_path }}'
+    path: '{{ pihole_docker_config.path }}'
     state: directory
     mode: '0755'
 
 - name: install | pihole persistent data directory
   become: true
   ansible.builtin.file:
-    path: '{{ pihole_path }}/data'
+    path: '{{ pihole_docker_config.path }}/data'
     state: directory
     mode: '0755'
   register: pihole_data_dir_result
@@ -61,7 +61,7 @@
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
-    dest: '{{ pihole_path }}/docker-compose.yml'
+    dest: '{{ pihole_docker_config.path }}/docker-compose.yml'
     mode: '0644'
     lstrip_blocks: true
   notify:

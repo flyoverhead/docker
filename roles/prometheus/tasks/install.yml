@@ -3,7 +3,7 @@
 - name: install | prometheus service folder
   become: true
   ansible.builtin.file:
-    path: '{{ prometheus_path }}'
+    path: '{{ prometheus_docker_config.path }}'
     state: directory
     mode: '0755'
 
@@ -11,7 +11,7 @@
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
-    dest: '{{ prometheus_path }}/docker-compose.yml'
+    dest: '{{ prometheus_docker_config.path }}/docker-compose.yml'
     mode: '0644'
     lstrip_blocks: true
   notify:

@@ -2,15 +2,15 @@
 
 - name: torrserver | start container
   community.docker.docker_compose_v2:
-    project_src: '{{ torrserver_path }}'
+    project_src: '{{ torrserver_docker_config.path }}'
     state: present
-    wait: true
-    wait_timeout: 60
+    # wait: true
+    # wait_timeout: 60
 
 - name: torrserver | restart container
   become: true
   community.docker.docker_compose_v2:
-    project_src: '{{ torrserver_path }}'
+    project_src: '{{ torrserver_docker_config.path }}'
     state: restarted
-    wait: true
-    wait_timeout: 60
+    # wait: true
+    # wait_timeout: 60

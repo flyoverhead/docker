@@ -1,19 +1,25 @@
 ---
 
 # https://github.com/prometheus/node_exporter
-# https://hub.docker.com/r/prom/node-exporter
-node_exporter_name: node-exporter
-node_exporter_image: prom/node-exporter
-node_exporter_tag: v1.8.0
-node_exporter_listening_address: 127.0.0.1
-node_exporter_listening_port: 9100
-node_exporter_path: /opt/docker/node-exporter
-node_exporter_restart_policy: always
-node_exporter_network_mode: host
-node_exporter_timezone: Europe/Moscow
+# https://hub.docker.com/r/prom/node-exporter/tags
+
+node_exporter_docker_config:
+  name: node-exporter
+  image: prom/node-exporter
+  tag: v1.8.2
+  path: '{{ docker_path }}/node-exporter'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+node_exporter_service_config:
+  listening_address: 0.0.0.0
+  listening_port: 9100
 
 node_exporter_command:
-  - --web.listen-address={{ node_exporter_listening_address }}:{{ node_exporter_listening_port }}
+  - >-
+    --web.listen-address={{ node_exporter_service_config.listening_address
+    }}:{{ node_exporter_service_config.listening_port }}
   - --path.procfs=/host/proc
   - --path.rootfs=/rootfs
   - --path.sysfs=/host/sys

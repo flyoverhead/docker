@@ -10,7 +10,7 @@
 
 - name: pihole | start container
   community.docker.docker_compose_v2:
-    project_src: '{{ pihole_path }}'
+    project_src: '{{ pihole_docker_config.path }}'
     state: present
     wait: true
     wait_timeout: 60
@@ -18,7 +18,7 @@
 - name: pihole | restart container
   become: true
   community.docker.docker_compose_v2:
-    project_src: '{{ pihole_path }}'
+    project_src: '{{ pihole_docker_config.path }}'
     state: restarted
     wait: true
     wait_timeout: 60
@@ -26,14 +26,14 @@
 - name: pihole | clean domain blacklist
   become: true
   ansible.builtin.command:
-    cmd: sqlite3 {{ pihole_path }}/data/gravity.db "DELETE FROM domainlist WHERE type='3'"
+    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "DELETE FROM domainlist WHERE type='3'"
   changed_when: True
 
 - name: pihole | add domain blacklist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ pihole_path }}/data/gravity.db
+      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (3, '{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'domain_black.list').splitlines() }}"
   register: result
@@ -43,14 +43,14 @@
 - name: pihole | clean domain whitelist
   become: true
   ansible.builtin.command:
-    cmd: sqlite3 {{ pihole_path }}/data/gravity.db "DELETE FROM domainlist WHERE type='2'"
+    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "DELETE FROM domainlist WHERE type='2'"
   changed_when: True
 
 - name: pihole | add domain whitelist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ pihole_path }}/data/gravity.db
+      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (2, '{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'domain_white.list').splitlines() }}"
   register: result
@@ -61,7 +61,7 @@
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ pihole_path }}/data/gravity.db
+      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO adlist (address, enabled, comment) VALUES ('{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'adlist.list').splitlines() }}"
   register: result
@@ -70,5 +70,5 @@
 
 - name: pihole | update gravity
   community.docker.docker_container_exec:
-    container: '{{ pihole_name }}'
+    container: '{{ pihole_docker_config.name }}'
     command: /bin/sh -c "pihole -g"

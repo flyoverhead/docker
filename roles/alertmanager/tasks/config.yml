@@ -4,7 +4,7 @@
   become: true
   ansible.builtin.template:
     src: alertmanager.yml.j2
-    dest: '{{ alertmanager_path }}/alertmanager.yml'
+    dest: '{{ alertmanager_docker_config.path }}/alertmanager.yml'
     mode: '0644'
     lstrip_blocks: true
   notify:
@@ -16,7 +16,7 @@
     - name: config | alertmanager message template folder
       become: true
       ansible.builtin.file:
-        path: '{{ alertmanager_path }}/templates'
+        path: '{{ alertmanager_docker_config.path }}/templates'
         state: directory
         mode: '0755'
 
@@ -24,7 +24,7 @@
       become: true
       ansible.builtin.copy:
         src: '{{ item }}'
-        dest: '{{ alertmanager_path }}/templates/{{ item | basename }}'
+        dest: '{{ alertmanager_docker_config.path }}/templates/{{ item | basename }}'
         mode: '0644'
       with_fileglob:
         - '*.tmpl'

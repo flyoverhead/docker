@@ -6,3 +6,4 @@
 .tflint.hcl
 .yamllint
 .DS_Store
+roles/xray/files/geosite/*

@@ -1,77 +1,58 @@
 ---
 
-xray_image: teddysun/xray
-xray_tag: 1.8.11
-xray_path: '{{ docker_path }}/{{ xray_name }}'
-xray_restart_policy: '{{ docker_restart_policy }}'
-xray_network_mode: '{{ docker_network_mode }}'
-xray_timezone: '{{ docker_timezone }}'
+xray_docker_config:
+  name: xray
+  image: teddysun/xray
+  tag: '{{ xray_version }}'
+  path: '{{ docker_path }}/xray'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
 
-xray_listening_address: 0.0.0.0
-xray_listening_port: 443
-xray_public_address: '{{ ansible_host }}'
+xray_service_config:
+  name: '{{ inventory_hostname }}'
+  tag: proxy
+  listening_address: 0.0.0.0
+  listening_port: 443
+  public_address: '{{ ansible_host }}'
+  vless_address: youtube.com
+  proxy:
+    domain:
+      - ext:geosite_v2fly.dat:category-anticensorship
+      - ext:geosite_v2fly.dat:category-dev
+      - ext:geosite_v2fly.dat:google
+      - ext:geosite_v2fly.dat:netflix
+      - ext:geosite_v2fly.dat:youtube
+      - ext:zkeen.dat:domains
+      - ext:zkeen.dat:youtube
 
-xray_clients:
-
-  - name: keenetic_moscow
-    protocol: socks
-
-  - name: keenetic_tumen
-    protocol: dokodemo-door
+xray_clients_config:
+  path: '{{ playbook_dir }}'
+  clients:
+    - name: router
+      protocol: dokodemo-door
+    - name: smartphone
+      protocol: socks
 
 xray_geofiles:
-
   - name: geodata_antizapret
     repo: warexify/antizapret-xray
     file: antizapret.dat
-
   - name: geodata_v2fly
     repo: v2fly/domain-list-community
     file: dlc.dat
-
   - name: geoip_v2fly
     repo: loyalsoldier/v2ray-rules-dat
     file: geoip.dat
-
   - name: geosite_antizapret
     repo: warexify/antizapret-xray
     file: antizapret.dat
-
   - name: geosite_v2fly
     repo: v2fly/domain-list-community
     file: dlc.dat
-
-xray_server_socks_tuning: false
-xray_server_socks_tuning_config:
-  fs.file-max: 51200
-  net.core.default_qdisc: fq
-  net.ipv4.tcp_congestion_control: bbr
-  net.core.rmem_max: 67108864
-  net.core.wmem_max: 67108864
-  net.core.netdev_max_backlog: 250000
-  net.core.somaxconn: 4096
-  net.ipv4.tcp_syncookies: 1
-  net.ipv4.tcp_tw_reuse: 1
-  net.ipv4.tcp_fin_timeout: 30
-  net.ipv4.tcp_keepalive_time: 1200
-  net.ipv4.ip_local_port_range: 10000 65000
-  net.ipv4.tcp_keepalive_probes: 5
-  net.ipv4.tcp_keepalive_intvl: 30
-  net.ipv4.tcp_max_syn_backlog: 8192
-  net.ipv4.tcp_max_tw_buckets: 5000
-  net.ipv4.tcp_fastopen: 3
-  net.ipv4.tcp_mem: 25600 51200 102400
-  net.ipv4.udp_mem: 25600 51200 102400
-  net.ipv4.tcp_rmem: 4096 87380 67108864
-  net.ipv4.tcp_wmem: 4096 65536 67108864
-  net.ipv4.tcp_mtu_probing: 1
-  net.ipv4.tcp_slow_start_after_idle: 0
-
-xray_system_limits:
-  - limit: nofile
-    domain: '*'
-    types:
-      - type: soft
-        value: 51200
-      - type: hard
-        value: 51200
+  - name: zkeen
+    repo: jameszeroX/zkeen-domains
+    file: zkeen.dat
+  - name: zkeenip
+    repo: jameszeroX/zkeen-ip
+    file: zkeenip.dat

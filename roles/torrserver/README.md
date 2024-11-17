@@ -6,14 +6,8 @@
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
-| `torrserver_name` | Torrserver service name (used for container's and folder's names) | `torrserver` |
-| `torrserver_image` | Torrserver docker image name | `ksey/torrserver` |
-| `torrserver_tag` | Torrserver docker image version tag | `latest` |
-| `torrserver_port` | Torrserver service HTTP port | `8070` |
-| `torrserver_path` | Path to service files | `/opt/docker` |
-| `torrserver_restart_policy` | Service container restart policy | `always` |
-| `torrserver_network_mode` | Service container network mode | `host` |
-| `torrserver_timezone` | Default timezone for docker service | `Europe/Moscow` |
+| `torrserver_docker_config` | Docker configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `torrserver_service_config` | Service configuration | Definition example in [defaults.yml](defaults/main.yml) |
 
 ## Dependencies
 

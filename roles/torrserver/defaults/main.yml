@@ -1,13 +1,16 @@
 ---
 
-# Torrserver configuration
 # https://github.com/YouROK/TorrServer
-# https://hub.docker.com/r/ksey/torrserver
-torrserver_name: torrserver
-torrserver_image: ksey/torrserver
-torrserver_tag: latest
-torrserver_path: /opt/docker/torrserver
-torrserver_port: '8070'
-torrserver_restart_policy: always
-torrserver_network_mode: host
-torrserver_timezone: Europe/Moscow
+# https://hub.docker.com/r/ksey/torrserver/tags
+
+torrserver_docker_config:
+  name: torrserver
+  image: ksey/torrserver
+  tag: latest
+  path: '{{ docker_path }}/torrserver'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+torrserver_service_config:
+  listening_port: 8070

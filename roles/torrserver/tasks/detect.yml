@@ -5,7 +5,7 @@
 
 - name: detect | torrserver container
   community.docker.docker_container_info:
-    name: '{{ torrserver_name }}'
+    name: '{{ torrserver_docker_config.name }}'
   register: torrserver_container
 
 - name: detect | torrserver container exists fact
@@ -14,5 +14,8 @@
 
 - name: detect | torrserver container update fact
   ansible.builtin.set_fact:
-    torrserver_container_update: >
-      {{ true if torrserver_container.exists and torrserver_tag not in torrserver_container.container.Config.Image else false }}
+    torrserver_container_update: >-
+      {{ true if
+      torrserver_container.exists and
+      torrserver_docker_config.tag not in torrserver_container.container.Config.Image
+      else false }}

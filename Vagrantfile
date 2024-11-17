@@ -2,60 +2,22 @@
 # vi: set ft=ruby :
 
 boxes = {
-  "server_01" => {
-    :hostname => "server01",
-    :ip       => "192.168.56.11",
-    :cpus     => "2",
-    :memory   => "2048",
-    :ports    => {
-      "5353"  => 5353,
-      "5454"  => 5454,
-      "8030"  => 8030,
-      "8060"  => 8060,
-      "8070"  => 8070,
-      "8443"  => 8443,
-      "9090"  => 9090,
-      "9093"  => 9093,
-      "9100"  => 9100,
-      "51820" => 51820
-    }
-  },
-  "server_02" => {
-    :hostname => "server02",
-    :ip       => "192.168.56.12",
-    :cpus     => "2",
-    :memory   => "2048",
-    :ports    => {
-      "5555"  => 5555,
-      "5454"  => 5656,
-      "8031"  => 8031,
-      "8061"  => 8061,
-      "8071"  => 8071,
-      "8444"  => 8444,
-      "9091"  => 9091,
-      "9094"  => 9094,
-      "9101"  => 9101,
-      "51821" => 51821
+  "host-01" => {
+    :hostname   => "host-01",
+    :private_ip => "192.168.56.11",
+    :cpus       => "2",
+    :memory     => "2048",
+    :ports      => {
+      "3000"  => "3000",
+      "5353"  => "5353",
+      "8070"  => "8070",
+      "8080"  => "8080",
+      "8443"  => "8443",
+      "9090"  => "9090",
+      "9093"  => "9093",
+      "9100"  => "9100"
     }
   }
-  "client_01" => {
-    :hostname => "client01",
-    :ip       => "192.168.56.13",
-    :cpus     => "2",
-    :memory   => "2048",
-    :ports    => {
-      "54782" => "54782",
-    }
-  },
-  "client_02" => {
-    :hostname => "client02",
-    :ip       => "192.168.56.14",
-    :cpus     => "2",
-    :memory   => "2048",
-    :ports    => {
-      "54783" => "54783",
-    }
-  },
 }
 
 bookworm_sources = <<-'BOOKWORM_SOURCES'
@@ -68,10 +30,10 @@ BOOKWORM_SOURCES
 Vagrant.configure(2) do |config|
   boxes.each do |hostname, cfg|
     config.vm.box = "bento/debian-12-arm64"
-      config.vm.define hostname do |config|
+      default = if hostname == "server" then true else false end
+      config.vm.define hostname, primary: default do |config|
       config.vm.hostname = cfg[:hostname]
       config.vm.provider :vmware_fusion do |v|
-        v.vmx["ethernet0.virtualdev"] = "vmxnet3"
         v.vmx["ethernet0.pcislotnumber"] = "160"
         v.vmx["ethernet1.pcislotnumber"] = "224"
         v.ssh_info_public = true
@@ -79,7 +41,10 @@ Vagrant.configure(2) do |config|
         v.cpus = cfg[:cpus]
         v.memory = cfg[:memory]
       end
-      config.vm.network "private_network", ip: cfg[:ip]
+      config.vm.network "private_network", ip: cfg[:private_ip]
+      (cfg[:ports]).each do |guest, host|
+        config.vm.network "forwarded_port", host: "#{host}", guest: "#{guest}"
+      end
       config.vm.synced_folder ".", "/vagrant"
       config.vm.provision "shell", inline: "echo \"#{bookworm_sources}\" > /etc/apt/sources.list"
     end

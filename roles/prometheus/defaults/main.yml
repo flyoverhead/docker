@@ -1,19 +1,25 @@
 ---
 
 # https://prometheus.io/
-# https://hub.docker.com/r/prom/prometheus
-prometheus_name: prometheus
-prometheus_image: prom/prometheus
-prometheus_tag: v2.52.0
-prometheus_listening_address: 127.0.0.1
-prometheus_listening_port: 9090
-prometheus_path: /opt/docker/prometheus
-prometheus_restart_policy: always
-prometheus_network_mode: host
-prometheus_timezone: Europe/Moscow
+# https://hub.docker.com/r/prom/prometheus/tags
+
+prometheus_docker_config:
+  name: prometheus
+  image: prom/prometheus
+  tag: v3.0.0
+  path: '{{ docker_path }}/prometheus'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+prometheus_service_config:
+  listening_address: 0.0.0.0
+  listening_port: 9090
 
 prometheus_command:
-  - --web.listen-address={{ prometheus_listening_address }}:{{ prometheus_listening_port }}
+  - >-
+    --web.listen-address={{ prometheus_service_config.listening_address
+    }}:{{ prometheus_service_config.listening_port }}
   - --config.file=/etc/prometheus/prometheus.yml
 
 prometheus_global_config:
@@ -22,34 +28,31 @@ prometheus_global_config:
   evaluation_interval: 15s
 
 prometheus_scrape_jobs:
-
   - job_name: alertmanager
     scrape_interval: 1m
     static_configs:
       - targets:
-          - '{{ ansible_host }}:{{ alertmanager_listening_port }}'
+          - '{{ ansible_host }}:{{ alertmanager_service_config.listening_port }}'
         labels:
           instance: '{{ ansible_hostname }}'
-
   - job_name: node-exporter
     scrape_interval: 1m
     static_configs:
       - targets:
-          - '{{ ansible_host }}:{{ node_exporter_listening_port }}'
+          - '{{ ansible_host }}:{{ node_exporter_service_config.listening_port }}'
         labels:
           instance: '{{ ansible_hostname }}'
-
   - job_name: prometheus
     scrape_interval: 1m
     static_configs:
       - targets:
-          - '{{ ansible_host }}:{{ prometheus_listening_port }}'
+          - '{{ ansible_host }}:{{ prometheus_service_config.listening_port }}'
         labels:
           instance: '{{ ansible_hostname }}'
 
 prometheus_alert_jobs:
   - static_configs:
       - targets:
-          - '{{ ansible_host }}:{{ alertmanager_listening_port }}'
+          - '{{ ansible_host }}:{{ alertmanager_service_config.listening_port }}'
         labels:
           instance: '{{ ansible_hostname }}'

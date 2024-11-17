@@ -7,10 +7,10 @@
   register: geofile_latest_release
 
 - name: geofiles | download {{ geofile.name }}
-  become: true
+  delegate_to: localhost
   ansible.builtin.get_url:
     url: '{{ geofile_asset.browser_download_url }}'
-    dest: '{{ xray_path }}/data/{{ geofile.name }}.dat'
+    dest: '{{ role_path }}/files/geosite/{{ geofile.name }}.dat'
     mode: '0644'
   loop: '{{ geofile_latest_release.json.assets }}'
   loop_control:
@@ -20,3 +20,16 @@
     - geofile.file == geofile_asset.name
   register: geofile_download
   until: geofile_download is succeeded
+
+- name: geofiles | copy {{ geofile.name }}
+  become: true
+  ansible.builtin.copy:
+    src: '{{ role_path }}/files/geosite/{{ geofile.name }}.dat'
+    dest: '{{ xray_docker_config.path }}/data/{{ geofile.name }}.dat'
+    mode: '0644'
+  loop: '{{ geofile_latest_release.json.assets }}'
+  loop_control:
+    label: '{{ geofile.file }}'
+    loop_var: geofile_asset
+  when:
+    - geofile.file == geofile_asset.name
