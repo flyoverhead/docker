@@ -13,6 +13,3 @@ galaxy_info:
     - docker
     - services
     - torrserver
-
-dependencies:
-  - role: docker

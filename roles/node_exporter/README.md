@@ -22,7 +22,7 @@
 - hosts: docker
   roles:
       - role: flyoverhead.docker.docker
-      - role: flyoverhead.docker.node-exporter
+      - role: flyoverhead.docker.node_exporter
 ```
 
 ## Example Node exporter starting options

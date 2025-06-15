@@ -7,5 +7,12 @@
     state: started
     enabled: true
 
+- name: docker | restart service
+  become: true
+  ansible.builtin.systemd_service:
+    name: docker
+    state: restarted
+    enabled: true
+
 - name: docker | reload groups
   ansible.builtin.meta: reset_connection

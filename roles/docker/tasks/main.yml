@@ -12,7 +12,7 @@
 
 - name: configure
   ansible.builtin.include_tasks:
-    file: configure.yml
+    file: config.yml
 
 - name: handlers
   ansible.builtin.meta: flush_handlers

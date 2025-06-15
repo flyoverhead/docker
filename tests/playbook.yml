@@ -1,11 +1,11 @@
 ---
 
-- name: test | deploy services
+- name: deploy services
   hosts: docker
 
   roles:
 
-    - role: node-exporter
+    - role: node_exporter
       when: '"node_exporter" in group_names'
 
     - role: prometheus
@@ -22,6 +22,9 @@
 
     - role: pihole
       when: '"pihole" in group_names'
+
+    - role: singbox
+      when: '"singbox" in group_names'
 
     - role: torrserver
       when: '"torrserver" in group_names'

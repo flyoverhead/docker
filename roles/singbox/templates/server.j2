@@ -1,0 +1,112 @@
+
+{
+  "log": {
+    "disabled": false,
+    "level": "error",
+    "output": "box.log",
+    "timestamp": true
+  },
+{% if singbox_server_config.dns_servers | default([]) | length > 0 %}
+  "dns": {
+    "servers": [
+{% for dns_server in singbox_server_config.dns_servers %}
+      {{ dns_server | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' if not loop.last }}
+{% endfor %}
+    ],
+    "rules": [
+{% for dns_rule in singbox_server_config.dns_rules %}
+      {{ dns_rule | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' if not loop.last }}
+{% endfor %}
+    ],
+    "final": "dns-local",
+    "strategy": "ipv4_only",
+    "independent_cache": true
+  },
+{% endif %}
+{% if singbox_server_config.endpoints | default([]) | length > 0 %}
+  "endpoints": {
+{% for endpoint in singbox_server_config.endpoints %}
+      {{ endpoint | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' if not loop.last }}
+{% endfor %}
+  },
+{% endif %}
+  "inbounds": [
+    {
+      "type": "vless",
+      "listen": "{{ singbox_server_config.listening_address }}",
+      "listen_port": {{ singbox_server_config.listening_port }},
+      "users": [
+{% for client in sing_box_all_clients %}
+        {
+          "name": "{{ client.name }}",
+          "uuid": "{{ client.uuid }}",
+          "flow": "xtls-rprx-vision"
+        }{{ ',' if not loop.last }}
+{% endfor %}
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "{{ singbox_server_config.vless_address }}",
+        "reality": {
+          "enabled": true,
+          "handshake": {
+            "server": "{{ singbox_server_config.vless_address }}",
+            "server_port": {{ singbox_server_config.vless_port }}
+            },
+            "private_key": "{{ singbox_server_config.private_key }}",
+            "short_id": [
+{% for client in sing_box_all_clients %}
+              "{{ client.short_id }}"{{ ',' if not loop.last }}
+{% endfor %}
+            ],
+            "max_time_difference": "5m"
+        }
+      }
+    }
+  ],
+{% if singbox_server_config.route_rules | default([]) | length > 0 %}
+  "route": {
+    "rules": [
+{% for route_rule in singbox_server_config.route_rules %}
+      {{ route_rule | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' }}
+{% endfor %}
+{% if singbox_server_config.rule_sets | default([]) | length > 0 %}
+{% for rule_set in singbox_server_config.rule_sets %}
+      {
+{% for key, value in rule_set.items() if key in ['action', 'outbound', 'tag'] %}
+{% if key == 'tag' %}
+{% set parameter = 'rule_set' %}
+{% else %}
+{% set parameter = key %}
+{% endif %}
+        "{{ parameter }}": "{{ value }}"{{ ',' if not loop.last }}
+{% endfor %}
+      }{{ ',' if not loop.last }}
+{% endfor %}
+{% endif %}
+    ],
+{% if singbox_server_config.rule_sets | default([]) | length > 0 %}
+    "rule_set": [
+{% for rule_set in singbox_server_config.rule_sets %}
+      {
+{% for key, value in rule_set.items() if key not in ['action', 'outbound'] %}
+        "{{ key }}": "{{ value }}"{{ ',' if not loop.last }}
+{% endfor %}
+      }{{ ',' if not loop.last }}
+{% endfor %}
+    ],
+{% endif %}
+    "final": "out-direct",
+    "auto_detect_interface": true
+  },
+{% endif %}
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}

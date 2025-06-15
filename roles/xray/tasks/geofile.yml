@@ -10,7 +10,7 @@
   delegate_to: localhost
   ansible.builtin.get_url:
     url: '{{ geofile_asset.browser_download_url }}'
-    dest: '{{ role_path }}/files/geosite/{{ geofile.name }}.dat'
+    dest: '{{ xray_geofiles_path.src }}/{{ geofile.name }}.dat'
     mode: '0644'
   loop: '{{ geofile_latest_release.json.assets }}'
   loop_control:
@@ -24,8 +24,8 @@
 - name: geofiles | copy {{ geofile.name }}
   become: true
   ansible.builtin.copy:
-    src: '{{ role_path }}/files/geosite/{{ geofile.name }}.dat'
-    dest: '{{ xray_docker_config.path }}/data/{{ geofile.name }}.dat'
+    src: '{{ xray_geofiles_path.src }}/{{ geofile.name }}.dat'
+    dest: '{{ xray_geofiles_path.dst }}/{{ geofile.name }}.dat'
     mode: '0644'
   loop: '{{ geofile_latest_release.json.assets }}'
   loop_control:

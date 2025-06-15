@@ -1,0 +1,241 @@
+---
+
+# https://sing-box.sagernet.org
+# https://github.com/SagerNet/sing-box/tags
+
+singbox_docker_config:
+  name: sing-box
+  image: ghcr.io/sagernet/sing-box
+  tag: v1.11.7
+  path: '{{ docker_path }}/sing-box'
+  restart_policy: always
+  network_mode: host
+  timezone: Europe/Moscow
+
+singbox_server_config:
+  name: '{{ inventory_hostname }}'
+  listening_address: 0.0.0.0
+  listening_port: 443
+  public_address: '{{ ansible_host }}'
+  vless_address: npo.nl
+  vless_port: 443
+  dns_servers: []
+    # - tag: dns-local
+    #   address: local
+    #   detour: out-direct
+    # - tag: dns-wg
+    #   address: 192.168.1.1
+    #   detour: out-wg
+    # - tag: dns-direct
+    #   address: https://common.dot.dns.yandex.net
+    #   address_resolver: dns-local
+    #   detour: out-direct
+  dns_rules: []
+    # - outbound: out-direct
+    #   server: dns-direct
+    # - outbound: out-wg
+    #   server: dns-wg
+  endpoints: []
+    # - tag: out-wg
+    #   type: wireguard
+    #   system: true
+    #   name: wg0
+    #   address:
+    #     - 192.168.1.2/32
+    #   private_key: <private_key>
+    #   listen_port: 51832
+    #   peers:
+    #     - address: <peer_ip_address>
+    #       port: 51832
+    #       public_key: <peer_public_key>
+    #       allowed_ips:
+    #         - 192.168.1.0/24
+    #       persistent_keepalive_interval: 25
+  route_rules: []
+    # - inbound: tun-in
+    #   action: sniff
+    # - protocol: dns
+    #   action: hijack-dns
+    # - domain:
+    #     - home.lab
+    #   outbound: out-wg
+  rule_sets: []
+
+singbox_clients_config:
+  path: '{{ inventory_dir }}/files/clients'
+  clients:
+    - name: keenetic_router
+    - name: smartphone
+      platform: android
+    - name: iphone
+      platform: ios
+    - name: macbook
+      platform: macos
+  dns_servers:
+    - tag: dns-local
+      address: local
+      detour: out-direct
+    - tag: dns-proxy
+      address: https://dns.adguard-dns.com/dns-query
+      address_resolver: dns-local
+      detour: out-proxy
+    - tag: dns-direct
+      address: https://common.dot.dns.yandex.net
+      address_resolver: dns-local
+      detour: out-direct
+  dns_rules:
+    - outbound: out-direct
+      server: dns-direct
+    - outbound: out-proxy
+      server: dns-proxy
+  route_rules:
+    - inbound: tun-in
+      action: sniff
+    - protocol: dns
+      action: hijack-dns
+    - protocol: bittorrent
+      outbound: out-direct
+    - domain:
+        - 4pda.to
+      outbound: out-proxy
+    - domain_regex:
+        - anthropic.+
+        - claude.+
+      outbound: out-proxy
+  rule_sets:
+    - tag: geosite-category-ads
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ads.srs
+      action: reject
+    - tag: antizapret
+      type: remote
+      format: binary
+      url: https://github.com/savely-krasovsky/antizapret-sing-box/releases/latest/download/antizapret.srs
+      outbound: out-proxy
+    - tag: geoip-ru
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geoip/rule-set/geoip-ru.srs
+      outbound: out-direct
+    - tag: geosite-category-anticensorship
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-anticensorship.srs
+      outbound: out-proxy
+    - tag: geosite-category-communication
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-communication.srs
+      outbound: out-proxy
+    - tag: geosite-category-companies
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-companies.srs
+      outbound: out-proxy
+    - tag: geosite-category-cryptocurrency
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-cryptocurrency.srs
+      outbound: out-proxy
+    - tag: geosite-category-ecommerce
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ecommerce.srs
+      outbound: out-proxy
+    - tag: geosite-category-dev
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-dev.srs
+      outbound: out-proxy
+    - tag: geosite-category-entertainment
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-entertainment.srs
+      outbound: out-proxy
+    - tag: geosite-category-gov-ru
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-gov-ru.srs
+      outbound: out-direct
+    - tag: geosite-category-porn
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-porn.srs
+      outbound: out-proxy
+    - tag: geosite-category-ru
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ru.srs
+      outbound: out-direct
+    - tag: geosite-google-gemini
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-gemini.srs
+      outbound: out-proxy
+    - tag: geosite-google-play
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-play.srs
+      outbound: out-proxy
+    - tag: geosite-google-registry
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-registry.srs
+      outbound: out-proxy
+    - tag: geosite-google-trust-services
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-trust-services.srs
+      outbound: out-proxy
+    - tag: geosite-google
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google.srs
+      outbound: out-proxy
+    - tag: geosite-googlefcm
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-googlefcm.srs
+      outbound: out-proxy
+    - tag: geosite-instagram
+      type: remote
+      format: binary
+      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-instagram.srs
+      outbound: out-proxy
+
+singbox_tuning_config:
+  enabled: true
+  fs.file-max: 51200
+  net.core.default_qdisc: fq
+  net.ipv4.tcp_congestion_control: bbr
+  net.core.rmem_max: 67108864
+  net.core.wmem_max: 67108864
+  net.core.netdev_max_backlog: 250000
+  net.core.somaxconn: 4096
+  net.ipv4.tcp_syncookies: 1
+  net.ipv4.tcp_tw_reuse: 1
+  net.ipv4.tcp_fin_timeout: 30
+  net.ipv4.tcp_keepalive_time: 1200
+  net.ipv4.ip_local_port_range: 10000 65000
+  net.ipv4.tcp_keepalive_probes: 5
+  net.ipv4.tcp_keepalive_intvl: 30
+  net.ipv4.tcp_max_syn_backlog: 8192
+  net.ipv4.tcp_max_tw_buckets: 5000
+  net.ipv4.tcp_fastopen: 3
+  net.ipv4.tcp_mem: 25600 51200 102400
+  net.ipv4.udp_mem: 25600 51200 102400
+  net.ipv4.tcp_rmem: 4096 87380 67108864
+  net.ipv4.tcp_wmem: 4096 65536 67108864
+  net.ipv4.tcp_mtu_probing: 1
+  net.ipv4.tcp_slow_start_after_idle: 0
+  system_limits:
+    - limit: nofile
+      domain: '*'
+      types:
+        - type: soft
+          value: 51200
+        - type: hard
+          value: 51200
+
+singbox_force_update_secrets: false

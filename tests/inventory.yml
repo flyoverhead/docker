@@ -21,6 +21,9 @@ pihole:
 prometheus:
   children:
     docker:
+singbox:
+  children:
+    docker:
 torrserver:
   children:
     docker:

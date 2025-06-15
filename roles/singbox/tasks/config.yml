@@ -1,0 +1,97 @@
+---
+
+- name: config | server tuning
+  block:
+
+    - name: config | kernel parameters
+      become: true
+      ansible.posix.sysctl:
+        name: '{{ item.key }}'
+        value: '{{ item.value }}'
+        state: present
+      loop: '{{ singbox_tuning_config | dict2items }}'
+      loop_control:
+        label: '{{ item.key }} is set to {{ item.value }}'
+      when:
+        - singbox_tuning_config.enabled
+        - item.key != 'enabled'
+        - item.key != 'system_limits'
+
+    - name: config | nofile limits
+      become: true
+      community.general.pam_limits:
+        domain: '{{ item.0.domain }}'
+        limit_type: '{{ item.1.type }}'
+        limit_item: '{{ item.0.limit }}'
+        value: '{{ item.1.value }}'
+      loop: >-
+        {{ singbox_tuning_config.system_limits |
+        subelements('types', skip_missing=true) }}
+      loop_control:
+        label: '{{ item.0.domain }} {{ item.1.type }} {{ item.0.limit }} {{ item.1.value }}'
+      when:
+        - singbox_tuning_config.enabled
+
+- name: config | server secrets
+  block:
+
+    - name: config | generate server secrets
+      ansible.builtin.include_tasks:
+        file: server.yml
+      when: >-
+        not sing_box_server_keys_exists
+        or singbox_force_update_secrets
+
+    - name: config | add server keys to config
+      ansible.builtin.set_fact:
+        singbox_server_config: >-
+          {{ singbox_server_config |
+          combine({'private_key': sing_box_private_key},
+          {'public_key': sing_box_public_key}) }}
+
+- name: config | generate clients secrets
+  block:
+
+    - name: config | generate clients
+      ansible.builtin.include_tasks:
+        file: client.yml
+      loop: '{{ sing_box_new_clients | default([]) }}'
+      loop_control:
+        index_var: sing_box_client
+        label: '{{ item.name | default(item) }}'
+
+    - name: config | set sing_box_all_clients fact
+      ansible.builtin.set_fact:
+        sing_box_all_clients: >-
+          {{ (sing_box_active_clients | default([]) |
+          difference(sing_box_inactive_clients | default([]))) +
+          sing_box_add_clients | default([]) | sort(attribute='name') }}
+
+- name: config | create server configuration
+  become: true
+  ansible.builtin.template:
+    src: server.j2
+    dest: '{{ singbox_docker_config.path }}/config.json'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - sing-box | start container
+    - sing-box | restart container
+
+- name: config | create client configuration
+  delegate_to: localhost
+  ansible.builtin.template:
+    src: client.j2
+    dest: '{{ singbox_clients_config.path }}/{{ item.name }}.json'
+    mode: '0644'
+    lstrip_blocks: true
+  loop: '{{ sing_box_all_clients }}'
+  loop_control:
+    label: '{{ item.name }}'
+
+- name: config | save public key
+  become: true
+  ansible.builtin.copy:
+    content: '{{ singbox_server_config.public_key }}'
+    dest: '{{ singbox_docker_config.path }}/public_key'
+    mode: '0644'

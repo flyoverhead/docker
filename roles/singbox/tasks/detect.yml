@@ -1,0 +1,128 @@
+---
+
+- name: detect | sing-box docker
+  tags:
+    - singbox.docker
+  block:
+
+    - name: detect | sing-box container
+      community.docker.docker_container_info:
+        name: '{{ singbox_docker_config.name }}'
+      register: sing_box_container
+
+    - name: detect | set sing_box_container_exists fact
+      ansible.builtin.set_fact:
+        sing_box_container_exists: >-
+          {{ true if
+          sing_box_container.exists
+          else false }}
+
+    - name: detect | set sing_box_container_update fact
+      ansible.builtin.set_fact:
+        sing_box_container_update: >-
+          {{ true if
+          sing_box_container.exists and
+          singbox_docker_config.tag not in sing_box_container.container.Config.Image
+          else false }}
+
+- name: detect | database
+  tags:
+    - singbox.clients
+    - singbox.server
+  block:
+
+    - name: detect | check database file
+      ansible.builtin.stat:
+        path: '{{ singbox_docker_config.path }}/config.json'
+      register: database_file
+
+    - name: detect | check public key file
+      ansible.builtin.stat:
+        path: '{{ singbox_docker_config.path }}/public_key'
+      register: public_key_file
+
+    - name: detect | read database file
+      become: true
+      ansible.builtin.slurp:
+        src: '{{ singbox_docker_config.path }}/config.json'
+      register: slurp_database_file
+      when:
+        - database_file.stat.exists
+
+    - name: detect | read public key file
+      become: true
+      ansible.builtin.slurp:
+        src: '{{ singbox_docker_config.path }}/public_key'
+      register: slurp_public_key_file
+      when:
+        - public_key_file.stat.exists
+
+    - name: detect | set database_file_content fact
+      ansible.builtin.set_fact:
+        database_file_content: >-
+          {{ slurp_database_file.content | b64decode |
+          from_json | json_query("inbounds")
+          if database_file.stat.exists
+          else '' }}
+        public_key_file_content: >-
+          {{ slurp_public_key_file.content | b64decode
+          if public_key_file.stat.exists
+          else '' }}
+
+    - name: detect | set sing_box_private_key fact
+      ansible.builtin.set_fact:
+        sing_box_private_key: >-
+          {{ database_file_content |
+          selectattr('tls', 'search', singbox_server_config.vless_address) |
+          map(attribute='tls.reality.private_key') | join('') }}
+
+    - name: detect | set sing_box_public_key fact
+      ansible.builtin.set_fact:
+        sing_box_public_key: >-
+          {{ public_key_file_content }}
+
+    - name: detect | set sing_box_server_keys_exists fact
+      ansible.builtin.set_fact:
+        sing_box_server_keys_exists: >-
+          {{ true if
+          sing_box_private_key | default('') | length > 0
+          and
+          sing_box_public_key | default('') | length > 0
+          else false }}
+
+    - name: detect | get sing-box database facts
+      when:
+        - database_file_content | length > 0
+      block:
+
+        - name: detect | set sing_box_active_clients fact
+          ansible.builtin.set_fact:
+            sing_box_active_clients: >-
+              {{ sing_box_active_clients | default([]) +
+              [item | combine({'short_id': (database_file_content |
+              map(attribute='tls.reality.short_id') | flatten)[sing_box_client]})] }}
+          loop: >-
+            {{ database_file_content |
+            selectattr('tls', 'search', singbox_server_config.vless_address) |
+            map(attribute='users') | flatten }}
+          loop_control:
+            label: '{{ item.name }}'
+            index_var: sing_box_client
+
+        - name: detect | set sing_box_new_clients fact
+          ansible.builtin.set_fact:
+            sing_box_inactive_clients: >-
+              {{ sing_box_active_clients | default([]) |
+              rejectattr('name', 'in', singbox_clients_config.clients |
+              map(attribute='name')) }}
+
+    - name: detect | set sing_box_new_clients fact
+      ansible.builtin.set_fact:
+        sing_box_new_clients: >-
+          {{ singbox_clients_config.clients
+          if
+          singbox_force_update_secrets
+          else
+          singbox_clients_config.clients |
+          rejectattr('name', 'in', sing_box_active_clients |
+          default([]) | map(attribute='name')) }}

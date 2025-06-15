@@ -7,3 +7,4 @@
 .yamllint
 .DS_Store
 roles/xray/files/geosite/*
+.ansible

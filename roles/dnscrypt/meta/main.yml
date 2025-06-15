@@ -12,6 +12,3 @@ galaxy_info:
         - bookworm
   galaxy_tags:
     - dnscrypt
-
-dependencies:
-  - role: docker

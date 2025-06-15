@@ -6,7 +6,7 @@
 xray_docker_config:
   name: xray
   image: teddysun/xray
-  tag: 24.11.11
+  tag: 24.11.30
   path: '{{ docker_path }}/xray'
   restart_policy: always
   network_mode: host
@@ -45,7 +45,7 @@ xray_service_config:
     protocol: []
 
 xray_clients_config:
-  path: '{{ playbook_dir }}' # save configuration files here
+  path: '{{ role_path }}/files/clients' # save configuration files here
   clients: []
     # - name: router
     #   protocol: dokodemo-door
@@ -74,6 +74,9 @@ xray_geofiles: []
   # - name: zkeenip
   #   repo: jameszeroX/zkeen-ip
   #   file: zkeenip.dat
+xray_geofiles_path:
+  src: '{{ role_path }}/files/geosites'
+  dst: '{{ xray_docker_config.path }}/data'
 
 xray_tuning_config:
   enabled: true

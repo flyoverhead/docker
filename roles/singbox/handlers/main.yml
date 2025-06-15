@@ -1,0 +1,17 @@
+---
+
+- name: sing-box | start container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ singbox_docker_config.path }}'
+    state: present
+    wait: true
+    wait_timeout: 60
+
+- name: sing-box | restart container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ singbox_docker_config.path }}'
+    state: restarted
+    wait: true
+    wait_timeout: 60
