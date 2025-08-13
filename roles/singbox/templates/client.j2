@@ -2,17 +2,19 @@
 {% if singbox_clients_config.clients |
 selectattr('name', 'equalto', item.name) |
 rejectattr('platform', 'undefined') |
-selectattr('platform', 'equalto', 'ios') | length == 0 %}
+selectattr('platform', 'in', 'ios') | length == 0 %}
 {% set ios = false %}
 {% else %}
 {% set ios = true %}
 {% endif %}
-{% if not ios %}
-  "log": {
-    "level": "error",
-    "output": "box.log",
-    "timestamp": true
-  },
+{% if singbox_clients_config.clients |
+selectattr('name', 'equalto', item.name) |
+rejectattr('platform', 'undefined') |
+selectattr('platform', 'in', 'android') | length == 0 %}
+{% set android = false %}
+{% else %}
+{% set android = true %}
+{% endif %}
 {% if singbox_clients_config.dns_servers | default([]) | length > 0 %}
   "dns": {
     "servers": [
@@ -21,17 +23,19 @@ selectattr('platform', 'equalto', 'ios') | length == 0 %}
       trim | indent(6) }}{{ ',' if not loop.last }}
 {% endfor %}
     ],
+ {% if singbox_clients_config.dns_rules | default([]) | length > 0 and
+ (not ios and not android) %}
     "rules": [
 {% for dns_rule in singbox_clients_config.dns_rules %}
       {{ dns_rule | to_nice_json(indent=4, sort_keys=false) |
       trim | indent(6) }}{{ ',' if not loop.last }}
 {% endfor %}
     ],
+{% endif %}
     "final": "dns-local",
     "strategy": "ipv4_only",
     "independent_cache": true
   },
-{% endif %}
 {% endif %}
   "inbounds": [
     {
