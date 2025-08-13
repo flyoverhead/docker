@@ -1,0 +1,10 @@
+---
+
+grafana_docker_config:
+  name: grafana
+  image: grafana/grafana-oss
+  tag: '{{ grafana_version }}'
+  path: '{{ docker_path }}/grafana'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'

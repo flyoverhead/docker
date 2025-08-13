@@ -1,0 +1,58 @@
+---
+
+xray_docker_config:
+  name: xray
+  image: teddysun/xray
+  tag: '{{ xray_version }}'
+  path: '{{ docker_path }}/xray'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+xray_service_config:
+  name: '{{ inventory_hostname }}'
+  tag: proxy
+  listening_address: 0.0.0.0
+  listening_port: 443
+  public_address: '{{ ansible_host }}'
+  vless_address: youtube.com
+  proxy:
+    domain:
+      - ext:geosite_v2fly.dat:category-anticensorship
+      - ext:geosite_v2fly.dat:category-dev
+      - ext:geosite_v2fly.dat:google
+      - ext:geosite_v2fly.dat:netflix
+      - ext:geosite_v2fly.dat:youtube
+      - ext:zkeen.dat:domains
+      - ext:zkeen.dat:youtube
+
+xray_clients_config:
+  path: '{{ playbook_dir }}'
+  clients:
+    - name: router
+      protocol: dokodemo-door
+    - name: smartphone
+      protocol: socks
+
+xray_geofiles:
+  - name: geodata_antizapret
+    repo: warexify/antizapret-xray
+    file: antizapret.dat
+  - name: geodata_v2fly
+    repo: v2fly/domain-list-community
+    file: dlc.dat
+  - name: geoip_v2fly
+    repo: loyalsoldier/v2ray-rules-dat
+    file: geoip.dat
+  - name: geosite_antizapret
+    repo: warexify/antizapret-xray
+    file: antizapret.dat
+  - name: geosite_v2fly
+    repo: v2fly/domain-list-community
+    file: dlc.dat
+  - name: zkeen
+    repo: jameszeroX/zkeen-domains
+    file: zkeen.dat
+  - name: zkeenip
+    repo: jameszeroX/zkeen-ip
+    file: zkeenip.dat

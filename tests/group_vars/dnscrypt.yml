@@ -1,0 +1,10 @@
+---
+
+dnscrypt_docker_config:
+  name: dnscrypt
+  image: klutchell/dnscrypt-proxy
+  tag: '{{ dnscrypt_version }}'
+  path: '{{ docker_path }}/dnscrypt'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'

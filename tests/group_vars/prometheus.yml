@@ -1,0 +1,10 @@
+---
+
+prometheus_docker_config:
+  name: prometheus
+  image: prom/prometheus
+  tag: '{{ prometheus_version }}'
+  path: '{{ docker_path }}/prometheus'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'

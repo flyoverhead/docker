@@ -1,21 +1,24 @@
 ---
-# Check current alertmanager service if exists
-- name: Check alertmanager container
-  community.docker.docker_container_info:
-    name: "{{ alertmanager_name }}"
-  register: alertmanager_service
-  changed_when: >
-    not alertmanager_service.exists or
-    alertmanager_tag not in alertmanager_service.container.Config.Image
-  failed_when: alertmanager_service.exists and alertmanager_service.container.State.ExitCode != 0
-  notify:
-    - Start alertmanager service
 
-# Configure alertmanager service
-- name: Configure alertmanager service
-  ansible.builtin.include_tasks: configure.yml
-  # when: not alertmanager_service.exists
+- name: detect
+  ansible.builtin.include_tasks:
+    file: detect.yml
 
-# Deploy alertmanager service
-- name: Deploy alertmanager service
+- name: install
+  ansible.builtin.include_tasks:
+    file: install.yml
+  when:
+    - not alertmanager_container_exists
+
+- name: update
+  ansible.builtin.include_tasks:
+    file: update.yml
+  when:
+    - alertmanager_container_update
+
+- name: config
+  ansible.builtin.include_tasks:
+    file: config.yml
+
+- name: handlers
   ansible.builtin.meta: flush_handlers

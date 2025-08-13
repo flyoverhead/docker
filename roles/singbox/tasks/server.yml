@@ -1,0 +1,19 @@
+---
+
+- name: config | generate server keys
+  become: true
+  community.docker.docker_container:
+    name: '{{ singbox_docker_config.name }}'
+    image: '{{ singbox_docker_config.image }}:{{ singbox_docker_config.tag }}'
+    cleanup: true
+    command: generate reality-keypair
+    detach: false
+  register: sing_box_keys
+
+- name: config | set server keys fact
+  ansible.builtin.set_fact:
+    sing_box_private_key: >-
+      {{ sing_box_keys.container.Output | regex_search('(?<=PrivateKey: )(.*?)(?=\n)') }}
+    sing_box_public_key: >-
+      {{ sing_box_keys.container.Output | regex_search('(?<=PublicKey: )(.*?)(?=\n)') }}
+  no_log: true

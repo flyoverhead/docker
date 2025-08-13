@@ -1,0 +1,55 @@
+---
+
+- name: client | generate secrets
+  when: >-
+    (item.uuid | default('') | length == 0
+    and
+    item.short_id | default('') | length == 0)
+    or singbox_force_update_secrets
+  block:
+
+    - name: client | generate uuid
+      become: true
+      community.docker.docker_container:
+        name: '{{ singbox_docker_config.name }}'
+        image: '{{ singbox_docker_config.image }}:{{ singbox_docker_config.tag }}'
+        cleanup: true
+        command: generate uuid
+        detach: false
+      register: sing_box_client_uuid_output
+      changed_when: true
+
+    - name: client | set uuid fact
+      ansible.builtin.set_fact:
+        generated_client_uuid: '{{ sing_box_client_uuid_output.container.Output | trim }}'
+
+    - name: client | generate short id
+      community.docker.docker_container:
+        name: '{{ singbox_docker_config.name }}'
+        image: '{{ singbox_docker_config.image }}:{{ singbox_docker_config.tag }}'
+        cleanup: true
+        command: generate rand 8 --hex
+        detach: false
+      register: sing_box_client_short_id_output
+      changed_when: true
+
+    - name: client | set short id fact
+      ansible.builtin.set_fact:
+        generated_client_short_id: '{{ sing_box_client_short_id_output.container.Output | trim }}'
+
+- name: client | set uuid and short id facts
+  ansible.builtin.set_fact:
+    client_uuid: >-
+      {{ generated_client_uuid if
+      generated_client_uuid | default([]) | length > 0
+      else item.uuid }}
+    client_short_id: >-
+      {{ generated_client_short_id if
+      generated_client_short_id | default([]) | length > 0
+      else item.short_id }}
+
+- name: client | add secrets to clients config
+  ansible.builtin.set_fact:
+    sing_box_add_clients: >-
+      {{ sing_box_add_clients | default([]) + [item |
+      combine({'uuid': client_uuid, 'short_id': client_short_id})] }}

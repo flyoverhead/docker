@@ -1,0 +1,21 @@
+---
+
+- name: detect | services
+  ansible.builtin.service_facts:
+
+- name: detect | prometheus container
+  community.docker.docker_container_info:
+    name: '{{ prometheus_docker_config.name }}'
+  register: prometheus_container
+
+- name: detect | prometheus container exists fact
+  ansible.builtin.set_fact:
+    prometheus_container_exists: '{{ true if prometheus_container.exists else false }}'
+
+- name: detect | prometheus container update fact
+  ansible.builtin.set_fact:
+    prometheus_container_update: >-
+      {{ true if
+      prometheus_container.exists and
+      prometheus_docker_config.tag not in prometheus_container.container.Config.Image
+      else false }}

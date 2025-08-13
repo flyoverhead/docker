@@ -1,0 +1,33 @@
+---
+
+- name: deploy services
+  hosts: docker
+
+  roles:
+
+    - role: node_exporter
+      when: '"node_exporter" in group_names'
+
+    - role: prometheus
+      when: '"prometheus" in group_names'
+
+    - role: alertmanager
+      when: '"alertmanager" in group_names'
+
+    - role: grafana
+      when: '"grafana" in group_names'
+
+    - role: dnscrypt
+      when: '"dnscrypt" in group_names'
+
+    - role: pihole
+      when: '"pihole" in group_names'
+
+    - role: singbox
+      when: '"singbox" in group_names'
+
+    - role: torrserver
+      when: '"torrserver" in group_names'
+
+    - role: xray
+      when: '"xray" in group_names'

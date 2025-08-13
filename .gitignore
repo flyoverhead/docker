@@ -1,3 +1,10 @@
 *.pub
 .vscode
 .vagrant
+.ansible-lint
+.pre-commit-config.yaml
+.tflint.hcl
+.yamllint
+.DS_Store
+roles/xray/files/geosite/*
+.ansible

@@ -1,60 +1,115 @@
 ---
-# Service root path
-service_root_path: "/opt/docker_services"
 
-# Docker configuration
-docker_restart_policy: "always"
-docker_network_mode: "host"
-
-# Default timezone
-timezone: "Europe/Moscow"
-
-# XRay configuration
 # https://xtls.github.io/
-# https://hub.docker.com/r/teddysun/xray
-xray_name: "xray"
-xray_image: "teddysun/xray"
-xray_tag: "1.8.4"
-xray_listening_address: "0.0.0.0"
-xray_listening_port: "443"
-xray_config: "vless_xtls_utls_reality"
-xray_server_public_address: "{{ ansible_host }}"
-xray_server_vless_flow: "xtls-rprx-vision"
-xray_clients_list: ["client01", "client02"]
+# https://hub.docker.com/r/teddysun/xray/tags
 
-# XRay server tuning configuration
-xray_server_socks_tuning: false
-xray_server_socks_tuning_config:
-  fs.file-max: "51200"
-  net.core.default_qdisc: "fq"
-  net.ipv4.tcp_congestion_control: "bbr"
-  net.core.rmem_max: "67108864"
-  net.core.wmem_max: "67108864"
-  net.core.netdev_max_backlog: "250000"
-  net.core.somaxconn: "4096"
-  net.ipv4.tcp_syncookies: "1"
-  net.ipv4.tcp_tw_reuse: "1"
-  net.ipv4.tcp_fin_timeout: "30"
-  net.ipv4.tcp_keepalive_time: "1200"
-  net.ipv4.ip_local_port_range: "10000 65000"
-  net.ipv4.tcp_keepalive_probes: "5"
-  net.ipv4.tcp_keepalive_intvl: "30"
-  net.ipv4.tcp_max_syn_backlog: "8192"
-  net.ipv4.tcp_max_tw_buckets: "5000"
-  net.ipv4.tcp_fastopen: "3"
-  net.ipv4.tcp_mem: "25600 51200 102400"
-  net.ipv4.udp_mem: "25600 51200 102400"
-  net.ipv4.tcp_rmem: "4096 87380 67108864"
-  net.ipv4.tcp_wmem: "4096 65536 67108864"
-  net.ipv4.tcp_mtu_probing: "1"
-  net.ipv4.tcp_slow_start_after_idle: "0"
+xray_docker_config:
+  name: xray
+  image: teddysun/xray
+  tag: 24.11.30
+  path: '{{ docker_path }}/xray'
+  restart_policy: always
+  network_mode: host
+  timezone: Europe/Moscow
 
-# XRay server system limits
-xray_system_limits:
-  - limit: "nofile"
-    domain: "*"
-    types:
-      - type: "soft"
-        value: "51200"
-      - type: "hard"
-        value: "51200"
+xray_service_config:
+  name: '{{ inventory_hostname }}'
+  tag: proxy
+  listening_address: 0.0.0.0
+  listening_port: 8443
+  public_address: '{{ ansible_host }}'
+  vless_address: youtube.com
+  private_key: ''
+  public_key: ''
+  block:
+    domain: []
+    ip: []
+    port: []
+    protocol: []
+  direct:
+    domain: []
+    ip: []
+    port: []
+    protocol: []
+  proxy:
+    domain: []
+      # - ext:geosite_v2fly.dat:category-anticensorship
+      # - ext:geosite_v2fly.dat:category-dev
+      # - ext:geosite_v2fly.dat:google
+      # - ext:geosite_v2fly.dat:netflix
+      # - ext:geosite_v2fly.dat:youtube
+      # - ext:zkeen.dat:domains
+      # - ext:zkeen.dat:youtube
+    ip: []
+    port: []
+    protocol: []
+
+xray_clients_config:
+  path: '{{ role_path }}/files/clients' # save configuration files here
+  clients: []
+    # - name: router
+    #   protocol: dokodemo-door
+    # - name: smaptphone
+    #   protocol: socks
+
+xray_geofiles: []
+  # - name: geodata_antizapret
+  #   repo: warexify/antizapret-xray
+  #   file: antizapret.dat
+  # - name: geodata_v2fly
+  #   repo: v2fly/domain-list-community
+  #   file: dlc.dat
+  # - name: geoip_v2fly
+  #   repo: loyalsoldier/v2ray-rules-dat
+  #   file: geoip.dat
+  # - name: geosite_antizapret
+  #   repo: warexify/antizapret-xray
+  #   file: antizapret.dat
+  # - name: geosite_v2fly
+  #   repo: v2fly/domain-list-community
+  #   file: dlc.dat
+  # - name: zkeen
+  #   repo: jameszeroX/zkeen-domains
+  #   file: zkeen.dat
+  # - name: zkeenip
+  #   repo: jameszeroX/zkeen-ip
+  #   file: zkeenip.dat
+xray_geofiles_path:
+  src: '{{ role_path }}/files/geosites'
+  dst: '{{ xray_docker_config.path }}/data'
+
+xray_tuning_config:
+  enabled: true
+  fs.file-max: 51200
+  net.core.default_qdisc: fq
+  net.ipv4.tcp_congestion_control: bbr
+  net.core.rmem_max: 67108864
+  net.core.wmem_max: 67108864
+  net.core.netdev_max_backlog: 250000
+  net.core.somaxconn: 4096
+  net.ipv4.tcp_syncookies: 1
+  net.ipv4.tcp_tw_reuse: 1
+  net.ipv4.tcp_fin_timeout: 30
+  net.ipv4.tcp_keepalive_time: 1200
+  net.ipv4.ip_local_port_range: 10000 65000
+  net.ipv4.tcp_keepalive_probes: 5
+  net.ipv4.tcp_keepalive_intvl: 30
+  net.ipv4.tcp_max_syn_backlog: 8192
+  net.ipv4.tcp_max_tw_buckets: 5000
+  net.ipv4.tcp_fastopen: 3
+  net.ipv4.tcp_mem: 25600 51200 102400
+  net.ipv4.udp_mem: 25600 51200 102400
+  net.ipv4.tcp_rmem: 4096 87380 67108864
+  net.ipv4.tcp_wmem: 4096 65536 67108864
+  net.ipv4.tcp_mtu_probing: 1
+  net.ipv4.tcp_slow_start_after_idle: 0
+  system_limits:
+    - limit: nofile
+      domain: '*'
+      types:
+        - type: soft
+          value: 51200
+        - type: hard
+          value: 51200
+
+xray_force_update_secrets: false

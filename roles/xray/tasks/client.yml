@@ -1,42 +1,51 @@
 ---
-# Check if client is already configured
-- name: Check for already configured xray client {{ xray_client_item }}
-  ansible.builtin.set_fact:
-    xray_client_exist: true
-  loop: "{{ xray_clients }}"
-  when: >
-    item is defined and
-    item | type_debug == "dict" and
-    xray_client_item in item.name
 
-# Generate secret for new client if it doesn't exist in current clients list
-- name: Configure new xray client {{ xray_client_item }}
-  when: xray_client_exist is undefined or not xray_client_exist
+- name: client | generate secrets
+  when: >-
+    (item.id | default('') | length == 0
+    and
+    item.short_id | default('') | length == 0)
+    or xray_force_update_secrets
   block:
-    # Generate xray client UUID
-    - name: Generate xray client uuid
+
+    - name: client | generate id
       become: true
       community.docker.docker_container:
-        name: "{{ xray_name }}"
-        image: "{{ xray_image }}:{{ xray_tag }}"
+        name: '{{ xray_docker_config.name }}'
+        image: '{{ xray_docker_config.image }}:{{ xray_docker_config.tag }}'
         cleanup: true
-        command: "xray uuid"
+        command: xray uuid
         detach: false
-      register: xray_client_uuid_output
+      register: xray_client_id_output
+      changed_when: true
 
-    # Set xray client UUID fact
-    - name: Set xray client uuid fact
+    - name: client | set id fact
       ansible.builtin.set_fact:
-        xray_client_uuid: "{{ xray_client_uuid_output.container.Output | trim }}"
+        generated_client_id: '{{ xray_client_id_output.container.Output | trim }}'
 
-    # Save newly generated client to clients list file for future comparsion
-    - name: Add xray client to server clients list file
-      become: true
-      when: "'vpn_server' in group_names"
-      ansible.builtin.lineinfile:
-        path: "{{ service_root_path }}/{{ xray_name }}/clients/clients.yml"
-        line: "{ 'name': {{ xray_client_item }}, 'id': {{ xray_client_uuid }} }"
-        insertbefore: "BOF"
-        state: "present"
-        create: true
-      no_log: true
+    - name: client | generate short id
+      ansible.builtin.command:
+        cmd: openssl rand -hex 8
+      register: short_id_output
+      changed_when: true
+
+    - name: client | set short id fact
+      ansible.builtin.set_fact:
+        generated_client_short_id: '{{ short_id_output.stdout | trim }}'
+
+- name: client | set id and short id facts
+  ansible.builtin.set_fact:
+    client_id: >-
+      {{ generated_client_id if
+      generated_client_id | default([]) | length > 0
+      else item.id }}
+    client_short_id: >-
+      {{ generated_client_short_id if
+      generated_client_short_id | default([]) | length > 0
+      else item.short_id }}
+
+- name: client | add secrets to clients config
+  ansible.builtin.set_fact:
+    xray_add_clients: >-
+      {{ xray_add_clients | default([]) + [item |
+      combine({'id': client_id, 'short_id': client_short_id})] }}

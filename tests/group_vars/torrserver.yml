@@ -1,0 +1,10 @@
+---
+
+torrserver_docker_config:
+  name: torrserver
+  image: ksey/torrserver
+  tag: '{{ torrserver_version }}'
+  path: '{{ docker_path }}/torrserver'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'

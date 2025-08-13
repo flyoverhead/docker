@@ -1,11 +1,12 @@
-version: "3.7"
+---
+
 services:
-  {{ node_exporter_name }}:
-    image: {{ node_exporter_image }}:{{ node_exporter_tag }}
-    container_name: {{ node_exporter_name }}
-    restart: {{ docker_restart_policy }}
+  {{ node_exporter_docker_config.name }}:
+    image: {{ node_exporter_docker_config.image }}:{{ node_exporter_docker_config.tag }}
+    container_name: {{ node_exporter_docker_config.name }}
+    restart: {{ node_exporter_docker_config.restart_policy }}
     environment:
-      - TZ={{ timezone }}
+      - TZ={{ node_exporter_docker_config.timezone }}
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -13,10 +14,10 @@ services:
       - /:/host:ro,rslave
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if docker_network_mode == "bridge" %}
+{% if node_exporter_docker_config.network_mode == "bridge" %}
     ports:
-      - "{{ node_exporter_port }}:{{ node_exporter_port }}"
+      - "{{ node_exporter_service_config.listening_port }}:{{ node_exporter_service_config.listening_port }}"
 {% endif %}
-    network_mode: {{ docker_network_mode }}
+    network_mode: {{ node_exporter_docker_config.network_mode }}
     pid: host
     command: {{ node_exporter_command | list }}

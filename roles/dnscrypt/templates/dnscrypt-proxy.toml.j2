@@ -29,11 +29,8 @@
 ##
 ## Remove the leading # first to enable this; lines starting with # are ignored.
 
-{% if dnscrypt_public_resolvers is defined and dnscrypt_public_resolvers | list | length %}
-server_names = {{ dnscrypt_public_resolvers | list | to_json | regex_replace('"', '\'') }}
-{% elif dnscrypt_public_resolvers is defined and dnscrypt_public_resolvers | length %}
-server_names = {{ dnscrypt_public_resolvers }}
-{% else %}
+{% if dnscrypt_service_config.public_resolvers | length > 0 %}
+server_names = {{ dnscrypt_service_config.public_resolvers | to_json | regex_replace('"', '\'') }}
 {% endif %}
 
 
@@ -44,14 +41,10 @@ server_names = {{ dnscrypt_public_resolvers }}
 ## To listen to all IPv4 addresses, use `listen_addresses = ['0.0.0.0:53']`
 ## To listen to all IPv4+IPv6 addresses, use `listen_addresses = ['[::]:53']`
 
-{% if dnscrypt_listening_addresses is defined and dnscrypt_listening_addresses | list | length %}
-listen_addresses = {{ dnscrypt_listening_addresses | map('regex_replace', '$', ':' + dnscrypt_listening_port) | list | to_json | regex_replace('"', '\'') }}
-{% elif dnscrypt_listening_addresses is defined and dnscrypt_listening_addresses | length %}
-listen_addresses = {{ dnscrypt_listening_addresses }}:{{ dnscrypt_listening_port }}
-{% elif dnscrypt_ipv6_servers %}
-listen_addresses = ['[::]:{{ dnscrypt_listening_port }}']
-{% else %}
-['0.0.0.0:{{ dnscrypt_listening_port }}']
+{% if dnscrypt_service_config.listening_addresses | length > 0 %}
+listen_addresses = {{ dnscrypt_service_config.listening_addresses | map('regex_replace', '$', ':' + dnscrypt_service_config.listening_port | string) | to_json | regex_replace('"', '\'') }}
+{% elif dnscrypt_service_config.ipv6_servers %}
+listen_addresses = ['[::]:{{ dnscrypt_service_config.listening_port }}']
 {% endif %}
 
 ## Maximum number of simultaneous client connections to accept
@@ -70,35 +63,34 @@ max_clients = 250
 ## Require servers (from remote sources) to satisfy specific properties
 
 # Use servers reachable over IPv4
-ipv4_servers = {{ dnscrypt_ipv4_servers | lower }}
+ipv4_servers = {{ dnscrypt_service_config.ipv4_servers | lower }}
 
 # Use servers reachable over IPv6 -- Do not enable if you don't have IPv6 connectivity
-ipv6_servers = {{ dnscrypt_ipv6_servers | lower }}
+ipv6_servers = {{ dnscrypt_service_config.ipv6_servers | lower }}
 
 # Use servers implementing the DNSCrypt protocol
-dnscrypt_servers = {{ dnscrypt_public_servers | lower }}
+dnscrypt_servers = {{ dnscrypt_service_config.public_servers | lower }}
 
 # Use servers implementing the DNS-over-HTTPS protocol
-doh_servers = {{ dnscrypt_doh_servers | lower }}
+doh_servers = {{ dnscrypt_service_config.doh_servers | lower }}
 
 # Use servers implementing the Oblivious DoH protocol
-odoh_servers = {{ dnscrypt_odoh_servers | lower }}
+odoh_servers = {{ dnscrypt_service_config.odoh_servers | lower }}
 
 
 ## Require servers defined by remote sources to satisfy specific properties
 
 # Server must support DNS security extensions (DNSSEC)
-require_dnssec = {{ dnscrypt_dnssec_servers | lower }}
+require_dnssec = {{ dnscrypt_service_config.dnssec_servers | lower }}
 
 # Server must not log user queries (declarative)
-require_nolog = {{ dnscrypt_nolog_servers | lower }}
+require_nolog = {{ dnscrypt_service_config.nolog_servers | lower }}
 
 # Server must not enforce its own blocklist (for parental control, ads blocking...)
-require_nofilter = {{ dnscrypt_nofilter_servers | lower }}
+require_nofilter = {{ dnscrypt_service_config.nofilter_servers | lower }}
 
 # Server names to avoid even if they match all criteria
-disabled_server_names = {{ dnscrypt_disabled_public_resolvers | list | to_json | regex_replace('"', '\'') }}
-
+disabled_server_names = {{ dnscrypt_service_config.disabled_public_resolvers | to_json | regex_replace('"', '\'') }}
 
 ## Always use TCP to connect to upstream servers.
 ## This can be useful if you need to route everything through Tor.
@@ -267,7 +259,7 @@ cert_refresh_delay = 240
 ## not be sent there. If you're using DNSCrypt or Anonymized DNS and your
 ## lists are up to date, these resolvers will not even be used.
 
-bootstrap_resolvers = {{ dnscrypt_upstream_servers | map('regex_replace', '$', ':53') | list | to_json | regex_replace('"', '\'') }}
+bootstrap_resolvers = {{ dnscrypt_service_config.upstream_servers | map('regex_replace', '$', ':53') | to_json | regex_replace('"', '\'') }}
 
 
 ## Always use the bootstrap resolver before the system DNS settings.
@@ -293,7 +285,7 @@ netprobe_timeout = 60
 ## On other operating systems, the connection will be initialized
 ## but nothing will be sent at all.
 
-netprobe_address = '{{ dnscrypt_netprobe_address }}:53'
+netprobe_address = '{{ dnscrypt_service_config.netprobe_address }}:53'
 
 
 ## Offline mode - Do not use any remote encrypted servers.
@@ -340,18 +332,18 @@ log_files_max_backups = 1
 ## This makes things faster when there is no IPv6 connectivity, but can
 ## also cause reliability issues with some stub resolvers.
 
-block_ipv6 = {% if dnscrypt_ipv6_servers %}false{% else %}true{% endif %}
+block_ipv6 = {% if dnscrypt_service_config.ipv6_servers %}false{% else %}true{% endif %}
 
 
 ## Immediately respond to A and AAAA queries for host names without a domain name
 
-block_unqualified = {{ dnscrypt_block_unqualified | lower }}
+block_unqualified = {{ dnscrypt_service_config.block_unqualified | lower }}
 
 
 ## Immediately respond to queries for local zones instead of leaking them to
 ## upstream resolvers (always causing errors or timeouts).
 
-block_undelegated = {{ dnscrypt_block_undelegated | lower }}
+block_undelegated = {{ dnscrypt_service_config.block_undelegated | lower }}
 
 
 ## TTL for synthetic responses sent when a request has been blocked (due to
@@ -398,12 +390,12 @@ reject_ttl = 10
 
 ## Enable a DNS cache to reduce latency and outgoing traffic
 
-cache = {{ dnscrypt_dns_cache | lower }}
+cache = {{ dnscrypt_service_config.dns_cache | lower }}
 
 
 ## Cache size
 
-cache_size = {{ dnscrypt_dns_cache_size }}
+cache_size = {{ dnscrypt_service_config.dns_cache_size }}
 
 
 ## Minimum TTL for cached entries
@@ -695,7 +687,7 @@ format = 'tsv'
 
 [sources]
 
-{% if dnscrypt_public_servers or dnscrypt_doh_servers %}
+{% if dnscrypt_service_config.public_servers or dnscrypt_service_config.doh_servers %}
   ### An example of a remote source from https://github.com/DNSCrypt/dnscrypt-resolvers
 
   [sources.public-resolvers]
@@ -706,7 +698,7 @@ format = 'tsv'
     prefix = ''
 {% endif %}
 
-{% if dnscrypt_anon_servers %}
+{% if dnscrypt_service_config.anon_servers %}
   ### Anonymized DNS relays
 
   [sources.relays]
@@ -717,7 +709,7 @@ format = 'tsv'
     prefix = ''
 {% endif %}
 
-{% if dnscrypt_odoh_servers %}
+{% if dnscrypt_service_config.odoh_servers %}
   ### ODoH (Oblivious DoH) servers and relays
 
   [sources.odoh-servers]
@@ -734,7 +726,7 @@ format = 'tsv'
     prefix = ''
 {% endif %}
 
-{% if dnscrypt_quad_servers %}
+{% if dnscrypt_service_config.quad_servers %}
   ### Quad9
 
   [sources.quad9-resolvers]

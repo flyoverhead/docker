@@ -1,0 +1,11 @@
+---
+
+- name: update | torrserver docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ torrserver_docker_config.path }}/docker-compose.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - torrserver | restart container

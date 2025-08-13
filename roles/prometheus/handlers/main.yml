@@ -1,32 +1,16 @@
 ---
-# Start prometheus service
-- name: Start prometheus service
-  community.docker.docker_compose:
-    project_src: "{{ service_root_path }}/{{ prometheus_name }}"
-    state: present
-  register: prometheus_service
-  retries: 5
-  delay: 10
-  until: prometheus_service.services[prometheus_name][prometheus_name].state.running
-  notify:
-    - Check prometheus service
 
-# Restart prometheus service
-- name: Restart prometheus service
-  community.docker.docker_compose:
-    project_src: "{{ service_root_path }}/{{ prometheus_name }}"
+- name: prometheus | start container
+  community.docker.docker_compose_v2:
+    project_src: '{{ prometheus_docker_config.path }}'
     state: present
-    restarted: true
-  notify:
-    - Check prometheus service
+    wait: true
+    wait_timeout: 60
 
-# Check prometheus service
-- name: Check prometheus service
-  ansible.builtin.uri:
-    url: "http://{{ ansible_host }}:{{ prometheus_port }}"
-    method: GET
-    status_code: 200
-  register: prometheus_status
-  until: prometheus_status.status == 200
-  retries: 3
-  delay: 30
+- name: prometheus | restart container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ prometheus_docker_config.path }}'
+    state: restarted
+    wait: true
+    wait_timeout: 60

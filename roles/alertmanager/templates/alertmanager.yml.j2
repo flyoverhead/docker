@@ -1,14 +1,13 @@
 ---
-#jinja2: trim_blocks: True, lstrip_blocks: True
 
 global:
-  {{ alertmanager_global_config | to_yaml | indent(2) }}
+  {{ alertmanager_global_config | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
 
 route:
-  {{ alertmanager_route_config | to_yaml | indent(2) }}
+  {{ alertmanager_route_config | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
 
 receivers:
-  {{ alertmanager_receivers_config | to_yaml | indent(2) }}
+  {{ alertmanager_receivers_config | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
 
 templates:
-  - "/etc/alertmanager/templates/*.tmpl"
+  - /etc/alertmanager/templates/*.tmpl

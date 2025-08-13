@@ -1,0 +1,38 @@
+---
+
+- name: detect
+  ansible.builtin.include_tasks:
+    file: detect.yml
+  tags:
+    - singbox.clients
+    - singbox.docker
+    - singbox.server
+
+- name: install
+  ansible.builtin.include_tasks:
+    file: install.yml
+    apply:
+      tags:
+        - singbox.docker
+  when:
+    - not sing_box_container_exists
+  tags:
+    - singbox.docker
+
+- name: update
+  ansible.builtin.include_tasks:
+    file: update.yml
+  when:
+    - sing_box_container_update
+  tags:
+    - singbox.docker
+
+- name: config
+  ansible.builtin.include_tasks:
+    file: config.yml
+  tags:
+    - singbox.docker
+    - singbox.tuning
+
+- name: handlers
+  ansible.builtin.meta: flush_handlers

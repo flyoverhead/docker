@@ -1,0 +1,34 @@
+---
+
+- name: config | prometheus configuration file
+  become: true
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: '{{ prometheus_docker_config.path }}/prometheus.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - prometheus | restart container
+
+- name: config | prometheus alerting rules
+  block:
+
+    - name: config | prometheus alerting rules folder
+      become: true
+      ansible.builtin.file:
+        path: '{{ prometheus_docker_config.path }}/alerts'
+        state: directory
+        mode: '0755'
+
+    - name: config | prometheus alerting rules files
+      become: true
+      ansible.builtin.copy:
+        src: '{{ item }}'
+        dest: '{{ prometheus_docker_config.path }}/alerts/{{ item | basename }}'
+        mode: '0644'
+      with_fileglob:
+        - '*.yml'
+      loop_control:
+        label: '{{ item | basename }}'
+      notify:
+        - prometheus | restart container

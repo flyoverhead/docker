@@ -1,0 +1,31 @@
+---
+
+- name: config | check domain blacklist
+  become: true
+  ansible.builtin.command:
+    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "SELECT COUNT(*) FROM domainlist WHERE type='3'"
+  register: pihole_domain_blacklist
+  changed_when: pihole_domain_blacklist.stdout != pihole_lists.domain_blacklist
+  notify:
+    - pihole | clean domain blacklist
+    - pihole | add domain blacklist
+
+- name: config | check domain whitelist
+  become: true
+  ansible.builtin.command:
+    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "SELECT COUNT(*) FROM domainlist WHERE type='2'"
+  register: pihole_domain_whitelist
+  changed_when: pihole_domain_whitelist.stdout != pihole_lists.domain_whitelist
+  notify:
+    - pihole | clean domain whitelist
+    - pihole | add domain whitelist
+
+- name: config | check adlist
+  become: true
+  ansible.builtin.command:
+    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "SELECT COUNT(*) FROM adlist"
+  register: pihole_adlist
+  changed_when: pihole_adlist.stdout != pihole_lists.adlist
+  notify:
+    - pihole | add adlist
+    - pihole | update gravity

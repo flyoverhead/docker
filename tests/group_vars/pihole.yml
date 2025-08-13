@@ -1,0 +1,10 @@
+---
+
+pihole_docker_config:
+  name: pihole
+  image: pihole/pihole
+  tag: '{{ pihole_version }}'
+  path: '{{ docker_path }}/pihole'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'

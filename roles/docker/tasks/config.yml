@@ -1,0 +1,23 @@
+---
+
+- name: configure | add users to docker group
+  become: true
+  ansible.builtin.user:
+    name: '{{ item }}'
+    groups: docker
+    append: true
+  loop: '{{ docker_users }}'
+  notify:
+    - docker | reload groups
+    - docker | start service
+
+- name: configure | create daemon.json
+  become: true
+  ansible.builtin.copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - docker | restart service

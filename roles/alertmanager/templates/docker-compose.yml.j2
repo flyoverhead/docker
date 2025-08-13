@@ -1,19 +1,19 @@
-#jinja2: trim_blocks: True, lstrip_blocks: True
-version: "3.7"
+---
+
 services:
-  {{ alertmanager_name }}:
-    image: {{ alertmanager_image }}:{{ alertmanager_tag }}
-    container_name: {{ alertmanager_name }}
-    restart: {{ docker_restart_policy }}
+  {{ alertmanager_docker_config.name }}:
+    image: {{ alertmanager_docker_config.image }}:{{ alertmanager_docker_config.tag }}
+    container_name: {{ alertmanager_docker_config.name }}
+    restart: {{ alertmanager_docker_config.restart_policy }}
     environment:
-      - TZ={{ timezone }}
+      - TZ={{ alertmanager_docker_config.timezone }}
     volumes:
-      - {{ service_root_path }}/{{ alertmanager_name }}:/etc/alertmanager
+      - {{ alertmanager_docker_config.path }}:/etc/alertmanager
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if docker_network_mode == "bridge" %}
+{% if alertmanager_docker_config.network_mode == 'bridge' %}
     ports:
-      - "{{ alertmanager_port }}:{{ alertmanager_port }}"
+      - "{{ alertmanager_service_config.listening_port }}:{{ alertmanager_service_config.listening_port }}"
 {% endif %}
-    network_mode: {{ docker_network_mode }}
+    network_mode: {{ alertmanager_docker_config.network_mode }}
     command: {{ alertmanager_command | list }}

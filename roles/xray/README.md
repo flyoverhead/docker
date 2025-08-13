@@ -1,4 +1,4 @@
-# `flyoverhead.docker.xray`
+# `docker.xray`
 
 `XRay VPN` docker service deployment.
 
@@ -6,22 +6,11 @@
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
-| `service_root_path` | Root path for services files on host machine | `/opt/docker_services` |
-| `docker_restart_policy` | Docker containers restart policy | `always` |
-| `docker_network_mode` | Docker containers network mode | `host` |
-| `timezone` | Default timezone for docker services | `Europe/Moscow` |
-| `xray_name` | XRay service name (used for container's and folder's names) | `xray` |
-| `xray_image` | XRay docker image name | `teddysun/xray` |
-| `xray_tag` | XRay docker image version tag | `1.8.4` |
-| `xray_listening_address` | XRay service listening address | `0.0.0.0` |
-| `xray_listening_port` | XRay service listening port | `443` |
-| `xray_config` | XRay server config to be used (based on [technology](https://github.com/XTLS/Xray-examples)) | `vless_xtls_utls_reality` |
-| `xray_server_public_address` | XRay server public IP address | `192.168.1.1` |
-| `xray_server_vless_flow` | XRay server VLESS flow | `"xtls-rprx-vision` |
-| `xray_clients_list` | XRay clients list (hostnames can be used to apply configuration to real hosts) | `["client1", "client2"]` |
-| `xray_server_socks_tuning` | XRay server [shadowsocks optimizations](https://shadowsocks.org/doc/advanced.html) | `false` |
-| `xray_server_socks_tuning_config` | XRay server shadowsocks optimization [parameters](https://shadowsocks.org/doc/advanced.html#step-2-tune-the-kernel-parameters) | `Example below` |
-| `xray_system_limits` | XRay server required system limits for [shadowsocks optimizations](https://shadowsocks.org/doc/advanced.html#step-1-increase-the-maximum-number-of-open-file-descriptors) | `Example below` |
+| `xray_docker_config` | Docker configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `xray_service_config` | Service configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `xray_clients_config` | Clients configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `xray_geofiles` | External geofiles configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `xray_tuning_config` | Server shadowsocks optimization [parameters](https://shadowsocks.org/doc/advanced.html#step-2-tune-the-kernel-parameters) | Definition example in [defaults.yml](defaults/main.yml) |
 
 ## Dependencies
 
@@ -31,77 +20,73 @@
 
 ## Example inventory
 
-### XRay client configuration will be applied for hosts in `vpn_clients` hostgroup
-
 ```yaml
-test:
+all:
   children:
-    vpn_server:
+    xray:
       hosts:
-        server:
-          ansible_host: "192.168.1.11"
-    vpn_clients:
-      hosts:
-        client01:
-          ansible_host: "192.168.1.12"
-        client02:
-          ansible_host: "192.168.1.13"
+        server_01:
+          ansible_host: 192.168.1.11
+        server_02:
+          ansible_host: 192.168.1.12
 ```
 
 ## Example playbook
 
 ```yaml
-- hosts: all
+- hosts: docker
   roles:
-      - role: flyoverhead.docker.docker
       - role: flyoverhead.docker.xray
 ```
 
-## Shadowsocks server optimization parameters example
+## Server config example
 
 ```yaml
-xray_server_socks_tuning_config:
-  fs.file-max: "51200"
-  net.core.default_qdisc: "fq"
-  net.ipv4.tcp_congestion_control: "bbr"
-  net.core.rmem_max: "67108864"
-  net.core.wmem_max: "67108864"
-  net.core.netdev_max_backlog: "250000"
-  net.core.somaxconn: "4096"
-  net.ipv4.tcp_syncookies: "1"
-  net.ipv4.tcp_tw_reuse: "1"
-  net.ipv4.tcp_fin_timeout: "30"
-  net.ipv4.tcp_keepalive_time: "1200"
-  net.ipv4.ip_local_port_range: "10000 65000"
-  net.ipv4.tcp_keepalive_probes: "5"
-  net.ipv4.tcp_keepalive_intvl: "30"
-  net.ipv4.tcp_max_syn_backlog: "8192"
-  net.ipv4.tcp_max_tw_buckets: "5000"
-  net.ipv4.tcp_fastopen: "3"
-  net.ipv4.tcp_mem: "25600 51200 102400"
-  net.ipv4.udp_mem: "25600 51200 102400"
-  net.ipv4.tcp_rmem: "4096 87380 67108864"
-  net.ipv4.tcp_wmem: "4096 65536 67108864"
-  net.ipv4.tcp_mtu_probing: "1"
-  net.ipv4.tcp_slow_start_after_idle: "0"
+xray_service_config:
+  name: '{{ inventory_hostname }}'
+  tag: proxy
+  listening_address: 0.0.0.0
+  listening_port: 443
+  public_address: '{{ ansible_host }}'
+  vless_address: youtube.com
+  proxy:
+    domain:
+      - ext:geosite_v2fly.dat:category-anticensorship
+      - ext:geosite_v2fly.dat:category-dev
+      - ext:geosite_v2fly.dat:google
+      - ext:geosite_v2fly.dat:netflix
+      - ext:geosite_v2fly.dat:youtube
+      - ext:zkeen.dat:domains
+      - ext:zkeen.dat:youtube
 ```
 
-## Shadowsocks server system limits example
+## Clients list example
 
 ```yaml
-xray_system_limits:
-  - limit: "nofile"
-    domain: "*"
-    types:
-      - type: "soft"
-        value: "51200"
-      - type: "hard"
-        value: "51200"
+xray_clients_config:
+  path: '{{ playbook_dir }}'
+  clients:
+    - name: router
+      protocol: dokodemo-door
+    - name: smaptphone
+      protocol: socks
+```
+
+## Geofiles example
+
+```yaml
+xray_geofiles:
+  - name: geosite_v2fly
+    repo: v2fly/domain-list-community
+    file: dlc.dat
+  - name: zkeen
+    repo: jameszeroX/zkeen-domains
+    file: zkeen.dat
 ```
 
 ## License
 
-MPL-2.0
+GPL-3.0-only
 
 ## Author Information
 

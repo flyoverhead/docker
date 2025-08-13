@@ -1,92 +1,74 @@
 ---
-# Restart systemd-resolved service
-- name: Restart systemd-resolved service
+
+- name: pihole | restart systemd-resolved
   become: true
-  ansible.builtin.service:
-    name: "systemd-resolved"
-    state: "started"
+  ansible.builtin.systemd_service:
+    name: systemd-resolved
+    state: started
     enabled: true
     daemon_reload: true
 
-# Start pihole service
-- name: Start pihole service
-  community.docker.docker_compose:
-    project_src: "{{ service_root_path }}/{{ pihole_name }}"
+- name: pihole | start container
+  community.docker.docker_compose_v2:
+    project_src: '{{ pihole_docker_config.path }}'
     state: present
-  register: pihole_service
-  retries: 5
-  delay: 10
-  until: pihole_service.services[pihole_name][pihole_name].state.running
-  notify:
-    - Check pihole service
+    wait: true
+    wait_timeout: 60
 
-# Restart pihole service
-- name: Restart pihole service
-  community.docker.docker_compose:
-    project_src: "{{ service_root_path }}/{{ pihole_name }}"
-    state: present
-    restarted: true
-  notify:
-    - Check pihole service
+- name: pihole | restart container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ pihole_docker_config.path }}'
+    state: restarted
+    wait: true
+    wait_timeout: 60
 
-# Check pihole service
-- name: Check pihole service
-  ansible.builtin.uri:
-    url: "http://{{ ansible_host }}:{{ pihole_web_port }}"
-    method: GET
-    status_code: 200
-  register: pihole_status
-  until: pihole_status.status == 200
-  retries: 3
-  delay: 30
-
-# Clean previous pihole domain blacklist
-- name: Clean pihole blacklist
+- name: pihole | clean domain blacklist
   become: true
   ansible.builtin.command:
-    cmd: sqlite3 {{ service_root_path }}/{{ pihole_name }}/data/gravity.db "DELETE FROM domainlist WHERE type='3'"
+    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "DELETE FROM domainlist WHERE type='3'"
+  changed_when: True
 
-# Create pihole domain blacklist
-- name: Configure pihole domain blacklist
+- name: pihole | add domain blacklist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ service_root_path }}/{{ pihole_name }}/data/gravity.db
+      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (3, '{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'domain_black.list').splitlines() }}"
   register: result
+  changed_when: True
   failed_when: result.rc > 0 and result.rc != 19
 
-# Clean previous pihole domain whitelist
-- name: Clean pihole whitelist
+- name: pihole | clean domain whitelist
   become: true
   ansible.builtin.command:
-    cmd: sqlite3 {{ service_root_path }}/{{ pihole_name }}/data/gravity.db "DELETE FROM domainlist WHERE type='2'"
+    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "DELETE FROM domainlist WHERE type='2'"
+  changed_when: True
 
-# Create pihole domain whitelist
-- name: Configure pihole domain whitelist
+- name: pihole | add domain whitelist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ service_root_path }}/{{ pihole_name }}/data/gravity.db
+      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (2, '{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'domain_white.list').splitlines() }}"
   register: result
+  changed_when: True
   failed_when: result.rc > 0 and result.rc != 19
 
-# Create pihole adlist
-- name: Configure pihole adlist
+- name: pihole | add adlist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ service_root_path }}/{{ pihole_name }}/data/gravity.db
+      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO adlist (address, enabled, comment) VALUES ('{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'adlist.list').splitlines() }}"
   register: result
+  changed_when: True
   failed_when: result.rc > 0 and result.rc != 19
 
-# Update pihole gravity database
-- name: Update pihole gravity
+- name: pihole | update gravity
   community.docker.docker_container_exec:
-    container: "{{ pihole_name }}"
+    container: '{{ pihole_docker_config.name }}'
     command: /bin/sh -c "pihole -g"

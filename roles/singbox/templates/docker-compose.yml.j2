@@ -1,0 +1,20 @@
+---
+
+services:
+  {{ singbox_docker_config.name }}:
+    image: {{ singbox_docker_config.image }}:{{ singbox_docker_config.tag }}
+    container_name: {{ singbox_docker_config.name }}
+    restart: {{ singbox_docker_config.restart_policy }}
+    environment:
+      - TZ={{ singbox_docker_config.timezone }}
+    volumes:
+      - {{ singbox_docker_config.path }}/config.json:/etc/sing-box/config.json
+      - {{ singbox_docker_config.path }}/log/box.log:/var/lib/sing-box/box.log
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+{% if singbox_docker_config.network_mode == 'bridge' %}
+    ports:
+      - "{{ singbox_server_config.listening_port }}:{{ singbox_server_config.listening_port }}"
+{% endif %}
+    network_mode: {{ singbox_docker_config.network_mode }}
+    command: -D /var/lib/sing-box -C /etc/sing-box/ run

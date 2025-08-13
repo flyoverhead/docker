@@ -1,72 +1,19 @@
 ---
-# Check if xray server private key already exists
-- name: Check xray private key
-  ansible.builtin.stat:
-    path: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_private_key"
-  register: xray_private_key_file
 
-# Check if xray server short id already exists
-- name: Check xray short id
-  ansible.builtin.stat:
-    path: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_sid"
-  register: xray_sid_file
+- name: config | generate server keys
+  become: true
+  community.docker.docker_container:
+    name: '{{ xray_docker_config.name }}'
+    image: '{{ xray_docker_config.image }}:{{ xray_docker_config.tag }}'
+    cleanup: true
+    command: xray x25519
+    detach: false
+  register: xray_keys
 
-# Generate xray server keys
-- name: Generate xray server keys
-  when: not xray_private_key_file.stat.exists
-  block:
-    # Generate xray private and public keys
-    - name: Generate xray private and public keys
-      become: true
-      community.docker.docker_container:
-        name: "{{ xray_name }}"
-        image: "{{ xray_image }}:{{ xray_tag }}"
-        cleanup: true
-        command: "xray x25519"
-        detach: false
-      register: xray_private_public_keys
-
-    # Set private and public keys as fact
-    - name: Set xray private and public keys fact
-      ansible.builtin.set_fact:
-        xray_keys: "{{ xray_private_public_keys.container.Output | trim | split('\n') }}"
-
-    # Save xray private key to file for future usage
-    - name: Save xray private key
-      become: true
-      ansible.builtin.copy:
-        dest: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_private_key"
-        content: "{{ xray_keys | select('match', 'Private') | join('\n') | regex_replace('^.*:\\s', '') }}"
-        mode: "0644"
-        force: true
-      no_log: true
-
-    # Save xray public key to file for future usage
-    - name: Save xray public key
-      become: true
-      ansible.builtin.copy:
-        dest: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_public_key"
-        content: "{{ xray_keys | select('match', 'Public') | join('\n') | regex_replace('^.*:\\s', '') }}"
-        mode: "0644"
-        force: true
-      no_log: true
-
-# Generate xray server sid
-- name: Generate xray server sid
-  when: not xray_sid_file.stat.exists
-  block:
-    # Generate xray server short ID
-    - name: Generate xray server short id
-      ansible.builtin.command:
-        cmd: openssl rand -hex 8
-      register: xray_sid_output
-
-    # Save xray server short ID to file for future usage
-    - name: Save xray server short id
-      become: true
-      ansible.builtin.copy:
-        dest: "{{ service_root_path }}/{{ xray_name }}/credentials/xray_sid"
-        content: "{{ xray_sid_output.stdout | trim }}"
-        mode: "0644"
-        force: true
-      no_log: true
+- name: config | set server keys fact
+  ansible.builtin.set_fact:
+    xray_private_key: >-
+      {{ xray_keys.container.Output | regex_search('(?<=Private key: )(.*?)(?=\n)') }}
+    xray_public_key: >-
+      {{ xray_keys.container.Output | regex_search('(?<=Public key: )(.*?)(?=\n)') }}
+  no_log: true

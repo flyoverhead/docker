@@ -1,0 +1,10 @@
+---
+
+node_exporter_docker_config:
+  name: node-exporter
+  image: prom/node-exporter
+  tag: '{{ node_exporter_version }}'
+  path: '{{ docker_path }}/node-exporter'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'

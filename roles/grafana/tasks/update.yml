@@ -1,0 +1,11 @@
+---
+
+- name: update | grafana docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ grafana_docker_config.path }}/docker-compose.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - grafana | restart container

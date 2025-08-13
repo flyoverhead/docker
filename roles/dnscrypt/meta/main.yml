@@ -1,11 +1,14 @@
+---
+
 galaxy_info:
   author: flyoverhead
   description: Dnscrypt-Proxy docker service deployment
   license: ISC
-  min_ansible_version: "2.13"
+  min_ansible_version: '2.13'
   platforms:
     - name: Debian
-      versions: ["bullseye", "bookworm"]
-  galaxy_tags: ["docker", "services", "dnscrypt", "pihole", "wireguard"]
-
-dependencies: []
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - dnscrypt

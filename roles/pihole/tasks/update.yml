@@ -1,0 +1,11 @@
+---
+
+- name: update | pihole docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ pihole_docker_config.path }}/docker-compose.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - pihole | restart container

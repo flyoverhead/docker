@@ -1,0 +1,203 @@
+
+{% if item.protocol == 'dokodemo-door' %}
+{% set inbound_tag = ["redirect", "tproxy"] %}
+{% elif item.protocol == 'socks' %}
+{% set inbound_tag = ["socks", "http"] %}
+{% endif %}
+{
+  "inbounds": [
+    {
+      {% if item.protocol == 'dokodemo-door' %}
+      "tag": "redirect",
+      "port": 61219,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp",
+        "followRedirect": true
+      },
+      "sniffing": {
+        "routeOnly": true,
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "quic",
+          "tls"
+        ]
+      }
+    },
+    {
+      "tag": "tproxy",
+      "port": 61219,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "udp",
+        "followRedirect": true
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tproxy": "tproxy"
+        }
+      }
+      {% elif item.protocol == 'socks' %}
+      "tag": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "protocol": "socks",
+      "settings": {
+        "auth": "noauth",
+        "udp": true,
+        "userLevel": 8
+      },
+      "sniffing": {
+        "destOverride": [
+          "http",
+          "tls"
+        ],
+        "enabled": true
+      }
+    },
+    {
+      "tag": "http",
+      "listen": "127.0.0.1",
+      "port": 10809,
+      "protocol": "http",
+      "settings": {
+        "userLevel": 8
+      }
+      {% endif %}
+    }
+  ],
+  "outbounds": [
+    {% for host in groups['xray'] %}
+    {% if hostvars[host]['xray_clients_config']['clients'] | default('') | length > 0 %}
+    {% if item.name in hostvars[host]['xray_clients_config']['clients'] | map(attribute='name') %}
+    {
+      "tag": "{{ hostvars[host]['xray_service_config']['tag'] }}",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "{{ hostvars[host]['xray_service_config']['public_address'] }}",
+            "port": {{ xray_service_config.listening_port }},
+            "users": [
+              {% for client in hostvars[host]['xray_clients_config']['clients'] %}
+              {% if item.name == client.name %}
+              {
+                "encryption": "none",
+                "flow": "xtls-rprx-vision",
+                "id": "{{ item.id }}"
+              }
+              {% endif %}
+              {% endfor %}
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "{{ hostvars[host]['xray_service_config']['public_key'] }}",
+          "fingerprint": "chrome",
+          "serverName": "{{ hostvars[host]['xray_service_config']['vless_address'] }}",
+          {% for client in hostvars[host]['xray_clients_config']['clients'] %}
+          {% if item.name == client.name %}
+          "shortId": "{{ item.short_id }}",
+          {% endif %}
+          {% endfor %}
+          "spiderX": "/"
+        }
+      }
+    },
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "http"
+        }
+      }
+    },
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "inboundTag": {{ inbound_tag | tojson }},
+        "outboundTag": "block",
+        "type": "field",
+        "domain": [
+          {% for domain in block_domain_regex %}
+          "{{ domain }}"{{ "," if not loop.last }}
+          {% endfor %}
+        ]
+      },
+      {
+        "inboundTag": {{ inbound_tag | tojson }},
+        "outboundTag": "block",
+        "type": "field",
+        "network": "udp",
+        "port": "135, 137, 138, 139"
+      },
+      {
+        "inboundTag": {{ inbound_tag | tojson }},
+        "outboundTag": "direct",
+        "type": "field",
+        "protocol": ["bittorrent"]
+      },
+      {% for host in groups['xray'] %}
+      {% if hostvars[host]['xray_clients_config']['clients'] | default('') | length > 0 %}
+      {% if item.name in hostvars[host]['xray_clients_config']['clients'] | map(attribute='name') %}
+      {
+        "inboundTag": {{ inbound_tag | tojson }},
+        "outboundTag": "{{ hostvars[host]['xray_service_config']['tag'] }}",
+        "type": "field",
+        {% if hostvars[host]['xray_service_config']['proxy']['domain'] is defined and hostvars[host]['xray_service_config']['proxy']['domain'] | length > 0 %}
+        "domain": [
+          {% for domain in hostvars[host]['xray_service_config']['proxy']['domain'] %}
+          "{{ domain }}"{{ "," if not loop.last }}
+          {% endfor %}
+        {% endif %}
+        {% if hostvars[host]['xray_service_config']['proxy']['ip'] is defined and hostvars[host]['xray_service_config']['proxy']['ip'] | length > 0 %}
+        ],
+        "ip": [
+          {% for ip in hostvars[host]['xray_service_config']['proxy']['ip'] %}
+          "{{ ip }}"{{ "," if not loop.last }}
+          {% endfor %}
+        {% endif %}
+        {% if hostvars[host]['xray_service_config']['proxy']['port'] is defined and hostvars[host]['xray_service_config']['proxy']['port'] | length > 0 %}
+        ],
+        "port": [
+          {% for port in hostvars[host]['xray_service_config']['proxy']['port'] %}
+          "{{ port }}"{{ "," if not loop.last }}
+          {% endfor %}
+        {% endif %}
+        {% if hostvars[host]['xray_service_config']['proxy']['protocol'] is defined and hostvars[host]['xray_service_config']['proxy']['protocol'] | length > 0 %}
+        ],
+        "protocol": [
+          {% for protocol in hostvars[host]['xray_service_config']['proxy']['protocol'] %}
+          "{{ protocol }}"{{ "," if not loop.last }}
+          {% endfor %}
+        {% endif %}
+        ]
+      },
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {
+        "inboundTag": {{ inbound_tag | tojson }},
+        "outboundTag": "direct",
+        "type": "field"
+      }
+    ]
+  },
+  "log": {
+    "loglevel": "warning"
+  }
+}

@@ -1,17 +1,21 @@
-version: "3.7"
+---
+
 services:
-  {{ xray_name }}:
-    image: {{ xray_image }}:{{ xray_tag }}
-    container_name: {{ xray_name }}
-    restart: {{ docker_restart_policy }}
+  {{ xray_docker_config.name }}:
+    image: {{ xray_docker_config.image }}:{{ xray_docker_config.tag }}
+    container_name: {{ xray_docker_config.name }}
+    restart: {{ xray_docker_config.restart_policy }}
     environment:
-      - TZ={{ timezone }}
+      - TZ={{ xray_docker_config.timezone }}
     volumes:
-      - {{ service_root_path }}/{{ xray_name }}/config.json:/etc/xray/config.json
+      - {{ xray_docker_config.path }}/config.json:/etc/xray/config.json
+{% for xray_geofile in xray_geofiles %}
+      - {{ xray_docker_config.path }}/data/{{ xray_geofile.name }}.dat:/usr/bin/{{ xray_geofile.name }}.dat
+{% endfor %}
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if docker_network_mode == "bridge" %}
+{% if xray_docker_config.network_mode == 'bridge' %}
     ports:
-      - "{{ xray_port }}:{{ xray_port }}"
+      - "{{ xray_service_config.listening_port }}:{{ xray_service_config.listening_port }}"
 {% endif %}
-    network_mode: {{ docker_network_mode }}
+    network_mode: {{ xray_docker_config.network_mode }}

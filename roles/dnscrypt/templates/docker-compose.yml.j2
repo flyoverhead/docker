@@ -1,20 +1,21 @@
-version: "3.7"
+---
+
 services:
-  {{ dnscrypt_name }}:
-    image: {{ dnscrypt_image }}:{{ dnscrypt_tag }}
-    container_name: {{ dnscrypt_name }}
-    restart: {{ docker_restart_policy }}
+  {{ dnscrypt_docker_config.name }}:
+    image: {{ dnscrypt_docker_config.image }}:{{ dnscrypt_docker_config.tag }}
+    container_name: {{ dnscrypt_docker_config.name }}
+    restart: {{ dnscrypt_docker_config.restart_policy }}
     environment:
-      - TZ={{ timezone }}
+      - TZ={{ dnscrypt_docker_config.timezone }}
     volumes:
-      - {{ service_root_path }}/{{ dnscrypt_name }}/dnscrypt-proxy.toml:/config/dnscrypt-proxy.toml:ro
+      - {{ dnscrypt_docker_config.path }}/dnscrypt-proxy.toml:/config/dnscrypt-proxy.toml:ro
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if docker_network_mode == "bridge" %}
+{% if dnscrypt_docker_config.network_mode == "bridge" %}
     ports:
-      - "{{ dnscrypt_listening_port }}:{{ dnscrypt_listening_port }}/tcp"
-      - "{{ dnscrypt_listening_port }}:{{ dnscrypt_listening_port }}/udp"
+      - "{{ dnscrypt_service_config.listening_port }}:{{ dnscrypt_service_config.listening_port }}/tcp"
+      - "{{ dnscrypt_service_config.listening_port }}:{{ dnscrypt_service_config.listening_port }}/udp"
 {% endif %}
-    network_mode: {{ docker_network_mode }}
+    network_mode: {{ dnscrypt_docker_config.network_mode }}
     cap_add:
       - NET_ADMIN

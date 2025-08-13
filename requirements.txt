@@ -1,3 +1,2 @@
-# General section
-ansible >= 2.13
-jmespath >= 1.0.1
+ansible
+jmespath

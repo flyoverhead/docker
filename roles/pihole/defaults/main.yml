@@ -1,42 +1,35 @@
 ---
-# Service root path
-service_root_path: "/opt/docker_services"
 
-# Docker configuration
-docker_restart_policy: "always"
-
-# Default timezone
-timezone: "Europe/Moscow"
-
-# sysctl IPv6 configuration
-sysctl_config_ipv6:
-  [
-    "net.ipv6.conf.all.disable_ipv6",
-    "net.ipv6.conf.default.disable_ipv6",
-    "net.ipv6.conf.lo.disable_ipv6",
-  ]
-
-# PiHole
 # https://pi-hole.net/
-# https://hub.docker.com/r/pihole/pihole
-pihole_name: "pihole"
-pihole_image: "pihole/pihole"
-pihole_tag: "2023.05.2"
-pihole_dnsmasq_listening_address: "all"
-pihole_upstream_dns: ["{{ ansible_host }}#{{ dnscrypt_listening_port }}"]
-pihole_web_password: "pihole"
-pihole_web_port: "8060"
-pihole_dns_port: "53"
-pihole_dnssec: true
-pihole_query_logging: true
-pihole_dns_bogus_priv: true
-pihole_dns_fqdn_required: true
-pihole_web_theme: "default-dark"
-pihole_ipv6_support: false
-pihole_adlist_content: "{{ lookup('file', 'adlist.list') | split | length + 1 }}"
-pihole_domain_blacklist_content: "{{ lookup('file', 'domain_black.list') | split | length }}"
-pihole_domain_whitelist_content: "{{ lookup('file', 'domain_white.list') | split | length }}"
+# https://hub.docker.com/r/pihole/pihole/tags
 
-# Required packages list
+pihole_docker_config:
+  name: pihole
+  image: pihole/pihole
+  tag: 2024.07.0
+  path: '{{ docker_path }}/pihole'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+pihole_service_config:
+  dnsmasq_listening_address: all
+  upstream_dns:
+    - '{{ ansible_host }}#5353'
+  web_password: pihole
+  web_address: '{{ ansible_host }}'
+  web_port: 8080
+  dnssec: true
+  query_logging: true
+  dns_bogus_priv: true
+  dns_fqdn_required: true
+  web_theme: default-dark
+  ipv6_support: false
+
+pihole_lists:
+  adlist: "{{ lookup('file', 'adlist.list') | split | length + 1 }}"
+  domain_blacklist: "{{ lookup('file', 'domain_black.list') | split | length }}"
+  domain_whitelist: "{{ lookup('file', 'domain_white.list') | split | length }}"
+
 pihole_required_packages:
   - sqlite3

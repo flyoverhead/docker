@@ -1,0 +1,18 @@
+---
+
+- name: install | sing-box service folder
+  become: true
+  ansible.builtin.file:
+    path: '{{ singbox_docker_config.path }}/data'
+    state: directory
+    mode: '0755'
+
+- name: install | docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ singbox_docker_config.path }}/docker-compose.yml'
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - sing-box | start container

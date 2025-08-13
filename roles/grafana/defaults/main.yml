@@ -1,25 +1,33 @@
 ---
-# Service root path
-service_root_path: "/opt/docker_services"
 
-# Docker configuration
-docker_restart_policy: "always"
-docker_network_mode: "host"
-
-# Default timezone
-timezone: "Europe/Moscow"
-
-# Grafana configuration
 # https://grafana.com/oss/grafana/
-# https://hub.docker.com/r/grafana/grafana-oss
-grafana_name: "grafana"
-grafana_image: "grafana/grafana-oss"
-grafana_tag: "10.1.1"
-grafana_port: "8030"
-grafana_admin_username: "grafana"
-grafana_admin_password: "grafana"
-grafana_plugins: ["grafana-clock-panel", "grafana-simple-json-datasource"]
+# https://hub.docker.com/r/grafana/grafana-oss/tags
+
+grafana_docker_config:
+  name: grafana
+  image: grafana/grafana-oss
+  tag: 10.4.12
+  path: '{{ docker_path }}/grafana'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+grafana_service_config:
+  listening_port: 3000
+  admin_username: grafana
+  admin_password: grafana
+
+grafana_plugins:
+  - grafana-clock-panel
+  - grafana-simple-json-datasource
+
 grafana_dashboards:
   - dashboard_id: 1860
     revision_id: 31
     name: node_exporter
+
+grafana_source:
+  name: prometheus
+  type: prometheus
+  url: http://{{ ansible_host }}
+  port: 9090

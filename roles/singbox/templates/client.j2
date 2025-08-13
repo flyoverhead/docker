@@ -1,0 +1,133 @@
+{
+{% if singbox_clients_config.clients |
+selectattr('name', 'equalto', item.name) |
+rejectattr('platform', 'undefined') |
+selectattr('platform', 'in', 'ios') | length == 0 %}
+{% set ios = false %}
+{% else %}
+{% set ios = true %}
+{% endif %}
+{% if singbox_clients_config.clients |
+selectattr('name', 'equalto', item.name) |
+rejectattr('platform', 'undefined') |
+selectattr('platform', 'in', 'android') | length == 0 %}
+{% set android = false %}
+{% else %}
+{% set android = true %}
+{% endif %}
+{% if singbox_clients_config.dns_servers | default([]) | length > 0 %}
+  "dns": {
+    "servers": [
+{% for dns_server in singbox_clients_config.dns_servers %}
+      {{ dns_server | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' if not loop.last }}
+{% endfor %}
+    ],
+ {% if singbox_clients_config.dns_rules | default([]) | length > 0 and
+ (not ios and not android) %}
+    "rules": [
+{% for dns_rule in singbox_clients_config.dns_rules %}
+      {{ dns_rule | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' if not loop.last }}
+{% endfor %}
+    ],
+{% endif %}
+    "final": "dns-local",
+    "strategy": "ipv4_only",
+    "independent_cache": true
+  },
+{% endif %}
+  "inbounds": [
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "tun0",
+      "address": "172.18.0.1/30",
+{% if singbox_clients_config.clients |
+selectattr('name', 'equalto', item.name) |
+rejectattr('platform', 'undefined') |
+selectattr('platform', 'in', ['android', 'ios', 'macos']) | length == 0 %}
+      "auto_redirect": true,
+      "route_exclude_address": [
+        "192.168.0.0/16",
+        "172.16.0.0/16",
+        "10.0.0.0/8"
+      ],
+{% endif %}
+      "auto_route": true
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "out-direct"
+    },
+    {
+      "type": "vless",
+      "tag": "out-proxy",
+      "server": "{{ singbox_server_config.public_address }}",
+      "server_port": {{ singbox_server_config.listening_port }},
+      "uuid": "{{ item.uuid }}",
+      "flow": "xtls-rprx-vision",
+      "tls": {
+        "enabled": true,
+        "server_name": "{{ singbox_server_config.vless_address }}",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "{{ singbox_server_config.public_key }}",
+          "short_id": "{{ item.short_id }}"
+        }
+      }
+    }
+  ],
+  "route": {
+{% if not ios %}
+    "rules": [
+{% if singbox_clients_config.route_rules | default([]) | length > 0 %}
+{% for route_rule in singbox_clients_config.route_rules %}
+      {{ route_rule | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' }}
+{% endfor %}
+{% endif %}
+{% if singbox_clients_config.rule_sets | default([]) | length > 0 %}
+{% for rule_set in singbox_clients_config.rule_sets %}
+      {
+{% for key, value in rule_set.items() if key in ['action', 'outbound', 'tag'] %}
+{% if key == 'tag' %}
+{% set parameter = 'rule_set' %}
+{% else %}
+{% set parameter = key %}
+{% endif %}
+        "{{ parameter }}": "{{ value }}"{{ ',' if not loop.last }}
+{% endfor %}
+      }{{ ',' if not loop.last }}
+{% endfor %}
+{% endif %}
+    ],
+{% if singbox_clients_config.rule_sets | default([]) | length > 0 %}
+    "rule_set": [
+{% for rule_set in singbox_clients_config.rule_sets %}
+      {
+{% for key, value in rule_set.items() if key not in ['action', 'outbound'] %}
+        "{{ key }}": "{{ value }}"{{ ',' if not loop.last }}
+{% endfor %}
+      }{{ ',' if not loop.last }}
+{% endfor %}
+    ],
+{% endif %}
+    "final": "out-direct",
+{% else %}
+    "final": "out-proxy",
+{% endif %}
+    "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}

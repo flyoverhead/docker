@@ -1,49 +1,38 @@
 ---
-# Tune kernel parameters for shadowsocks optimization
-- name: Tune kernel parameters
-  become: true
-  when: xray_server_socks_tuning
-  ansible.posix.sysctl:
-    name: "{{ item.key }}"
-    value: "{{ item.value }}"
-    state: "present"
-  loop: "{{ xray_server_socks_tuning_config | dict2items }}"
-  loop_control:
-    label: "{{ item.key }} is set to {{ item.value }}"
 
-# Modify system nofile limits
-- name: Modify system nofile limits
-  become: true
-  when: xray_server_socks_tuning
-  community.general.pam_limits:
-    domain: "{{ item.0.domain }}"
-    limit_type: "{{ item.1.type }}"
-    limit_item: "{{ item.0.limit }}"
-    value: "{{ item.1.value }}"
-  loop: "{{ xray_system_limits | d([]) | subelements('types', skip_missing=True) }}"
-  loop_control:
-    label: "{{ item.0.domain }} {{ item.1.type }} {{ item.0.limit }} {{ item.1.value }}"
+- name: detect
+  ansible.builtin.include_tasks:
+    file: detect.yml
+  tags:
+    - xray.clients
+    - xray.docker
+    - xray.server
 
-# Check current xray service if exists
-- name: Check xray container
-  community.docker.docker_container_info:
-    name: "{{ xray_name }}"
-  register: xray_service
-  changed_when: >
-    not xray_service.exists or
-    xray_tag not in xray_service.container.Config.Image
-  failed_when: xray_service.exists and xray_service.container.State.ExitCode != 0
-  notify:
-    - Start xray service
+- name: install
+  ansible.builtin.include_tasks:
+    file: install.yml
+    apply:
+      tags:
+        - xray.docker
+  when:
+    - not xray_container_exists
+  tags:
+    - xray.docker
 
-# Initialize xray service
-- name: Initialize xray service
-  ansible.builtin.include_tasks: initialize.yml
+- name: update
+  ansible.builtin.include_tasks:
+    file: update.yml
+  when:
+    - xray_container_update
+  tags:
+    - xray.docker
 
-# Configure xray service
-- name: Configure xray service
-  ansible.builtin.include_tasks: configure.yml
+- name: config
+  ansible.builtin.include_tasks:
+    file: config.yml
+  tags:
+    - xray.docker
+    - xray.tuning
 
-# Deploy xray service
-- name: Deploy xray service
+- name: handlers
   ansible.builtin.meta: flush_handlers

@@ -1,0 +1,24 @@
+---
+
+ansible_user: vagrant
+ansible_password: vagrant
+
+# https://hub.docker.com/r/prom/alertmanager/tags
+alertmanager_version: v0.27.0
+# https://github.com/klutchell/dnscrypt-proxy-docker/tags
+dnscrypt_version: v2.1.5
+# https://hub.docker.com/r/grafana/grafana-oss/tags
+grafana_version: 10.1.10
+# https://hub.docker.com/r/prom/node-exporter/tags
+node_exporter_version: v1.8.2
+# https://hub.docker.com/r/pihole/pihole/tags
+pihole_version: 2024.07.0
+# https://hub.docker.com/r/prom/prometheus/tags
+prometheus_version: v3.0.0
+# https://hub.docker.com/r/ksey/torrserver/tags
+torrserver_version: latest
+# https://hub.docker.com/r/teddysun/xray/tags
+xray_version: 24.11.11
+
+telegram_bot_token: ''
+telegram_chat_id: ''
