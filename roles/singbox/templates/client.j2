@@ -22,19 +22,24 @@ selectattr('platform', 'in', 'android') | length == 0 %}
       {{ dns_server | to_nice_json(indent=4, sort_keys=false) |
       trim | indent(6) }}{{ ',' if not loop.last }}
 {% endfor %}
+{% if singbox_clients_config.dns_rules | default([]) | length > 0 and
+not ios %}
     ],
- {% if singbox_clients_config.dns_rules | default([]) | length > 0 and
- (not ios and not android) %}
     "rules": [
 {% for dns_rule in singbox_clients_config.dns_rules %}
       {{ dns_rule | to_nice_json(indent=4, sort_keys=false) |
       trim | indent(6) }}{{ ',' if not loop.last }}
 {% endfor %}
-    ],
 {% endif %}
-    "final": "dns-local",
-    "strategy": "ipv4_only",
-    "independent_cache": true
+{% if singbox_clients_config.dns_defaults.keys() | default({}) | length > 0 and
+not ios %}
+    ],
+{% for key, value in singbox_clients_config.dns_defaults.items() %}
+      "{{ key }}": {% if value in [True, False] %}{{ value | lower }}{% else %}"{{ value }}"{% endif %}{{ ',' if not loop.last }}
+{% endfor %}
+{% else %}
+    ]
+{% endif %}
   },
 {% endif %}
   "inbounds": [
@@ -50,8 +55,7 @@ selectattr('platform', 'in', ['android', 'ios', 'macos']) | length == 0 %}
       "auto_redirect": true,
       "route_exclude_address": [
         "192.168.0.0/16",
-        "172.16.0.0/16",
-        "10.0.0.0/8"
+        "172.16.0.0/16"
       ],
 {% endif %}
       "auto_route": true
@@ -123,8 +127,19 @@ selectattr('platform', 'in', ['android', 'ios', 'macos']) | length == 0 %}
 {% else %}
     "final": "out-proxy",
 {% endif %}
-    "auto_detect_interface": true
+{% if singbox_clients_config.route_defaults.keys() | default({}) | length > 0 %}
+{% for key, value in singbox_clients_config.route_defaults.items() %}
+    "{{ key }}": {% if value in [True, False] %}{{ value | lower }}{% else %}"{{ value }}"{% endif %}{{ ',' if not loop.last }}
+{% endfor %}
+{% endif %}
   },
+{% if singbox_clients_config.log.keys() | default({}) | length > 0 %}
+  "log": {
+{% for key, value in singbox_clients_config.log.items() %}
+    "{{ key }}": {% if value in [True, False] %}{{ value | lower }}{% else %}"{{ value }}"{% endif %}{{ ',' if not loop.last }}
+{% endfor %}
+  },
+{% endif %}
   "experimental": {
     "cache_file": {
       "enabled": true

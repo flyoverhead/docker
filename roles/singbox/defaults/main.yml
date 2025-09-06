@@ -6,7 +6,7 @@
 singbox_docker_config:
   name: sing-box
   image: ghcr.io/sagernet/sing-box
-  tag: v1.11.7
+  tag: v1.12.1
   path: '{{ docker_path }}/sing-box'
   restart_policy: always
   network_mode: host
@@ -35,6 +35,10 @@ singbox_server_config:
     #   server: dns-direct
     # - outbound: out-wg
     #   server: dns-wg
+  dns_defaults: {}
+    # final: dns-local
+    # strategy: ipv4_only
+    # independent_cache: true
   endpoints: []
     # - tag: out-wg
     #   type: wireguard
@@ -51,6 +55,9 @@ singbox_server_config:
     #       allowed_ips:
     #         - 192.168.1.0/24
     #       persistent_keepalive_interval: 25
+  outbounds: []
+    # - type: direct
+    #   tag: out-direct
   route_rules: []
     # - inbound: tun-in
     #   action: sniff
@@ -60,6 +67,9 @@ singbox_server_config:
     #     - home.lab
     #   outbound: out-wg
   rule_sets: []
+  route_defaults:
+    final: out-direct
+    auto_detect_interface: true
 
 singbox_clients_config:
   path: '{{ inventory_dir }}/files/clients'
@@ -72,22 +82,26 @@ singbox_clients_config:
     - name: macbook
       platform: macos
   dns_servers:
-    - tag: dns-local
+    - tag: dns-direct
       address: local
       detour: out-direct
     - tag: dns-proxy
       address: https://dns.adguard-dns.com/dns-query
-      address_resolver: dns-local
+      address_resolver: dns-direct
       detour: out-proxy
     - tag: dns-direct
       address: https://common.dot.dns.yandex.net
-      address_resolver: dns-local
+      address_resolver: dns-direct
       detour: out-direct
   dns_rules:
     - outbound: out-direct
       server: dns-direct
     - outbound: out-proxy
       server: dns-proxy
+  dns_defaults:
+    final: dns-direct
+    strategy: ipv4_only
+    independent_cache: true
   route_rules:
     - inbound: tun-in
       action: sniff
@@ -203,6 +217,11 @@ singbox_clients_config:
       format: binary
       url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-instagram.srs
       outbound: out-proxy
+  route_defaults:
+    auto_detect_interface: true
+  log:
+    level: error
+    timestamp: true
 
 singbox_tuning_config:
   enabled: true

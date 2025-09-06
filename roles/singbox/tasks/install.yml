@@ -3,9 +3,19 @@
 - name: install | sing-box service folder
   become: true
   ansible.builtin.file:
-    path: '{{ singbox_docker_config.path }}/data'
+    path: '{{ singbox_docker_config.path }}/{{ item }}'
     state: directory
     mode: '0755'
+  loop:
+    - data
+    - log
+
+- name: install | box.log file
+  become: true
+  ansible.builtin.file:
+    path: '{{ singbox_docker_config.path }}/log/box.log'
+    state: touch
+    mode: '0644'
 
 - name: install | docker-compose file
   become: true

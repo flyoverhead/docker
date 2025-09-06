@@ -82,7 +82,7 @@
   delegate_to: localhost
   ansible.builtin.template:
     src: client.j2
-    dest: '{{ singbox_clients_config.path }}/{{ item.name }}.json'
+    dest: '{{ singbox_clients_config.path }}/{{ singbox_server_config.name }}-{{ item.name }}.json'
     mode: '0644'
     lstrip_blocks: true
   loop: '{{ sing_box_all_clients }}'
