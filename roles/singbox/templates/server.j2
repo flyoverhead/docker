@@ -13,25 +13,31 @@
       {{ dns_server | to_nice_json(indent=4, sort_keys=false) |
       trim | indent(6) }}{{ ',' if not loop.last }}
 {% endfor %}
+{% if singbox_server_config.dns_rules | default([]) | length > 0 %}
     ],
     "rules": [
 {% for dns_rule in singbox_server_config.dns_rules %}
       {{ dns_rule | to_nice_json(indent=4, sort_keys=false) |
       trim | indent(6) }}{{ ',' if not loop.last }}
 {% endfor %}
+{% endif %}
+{% if singbox_server_config.dns_defaults.keys() | default({}) | length > 0 %}
     ],
-    "final": "dns-local",
-    "strategy": "ipv4_only",
-    "independent_cache": true
+{% for key, value in singbox_server_config.dns_defaults.items() %}
+    "{{ key }}": {% if value in [True, False] %}{{ value | lower }}{% else %}"{{ value }}"{% endif %}{{ ',' if not loop.last }}
+{% endfor %}
+{% else %}
+    ]
+{% endif %}
   },
 {% endif %}
 {% if singbox_server_config.endpoints | default([]) | length > 0 %}
-  "endpoints": {
+  "endpoints": [
 {% for endpoint in singbox_server_config.endpoints %}
-      {{ endpoint | to_nice_json(indent=4, sort_keys=false) |
-      trim | indent(6) }}{{ ',' if not loop.last }}
+    {{ endpoint | to_nice_json(indent=4, sort_keys=false) |
+    trim | indent(6) }}{{ ',' if not loop.last }}
 {% endfor %}
-  },
+  ],
 {% endif %}
   "inbounds": [
     {
@@ -67,12 +73,20 @@
       }
     }
   ],
+{% if singbox_server_config.outbounds | default([]) | length > 0 %}
+  "outbounds": [
+{% for outbound in singbox_server_config.outbounds %}
+      {{ outbound | to_nice_json(indent=4, sort_keys=false) |
+      trim | indent(6) }}{{ ',' if not loop.last }}
+{% endfor %}
+  ],
+{% endif %}
 {% if singbox_server_config.route_rules | default([]) | length > 0 %}
   "route": {
     "rules": [
 {% for route_rule in singbox_server_config.route_rules %}
       {{ route_rule | to_nice_json(indent=4, sort_keys=false) |
-      trim | indent(6) }}{{ ',' }}
+      trim | indent(6) }}{{ ',' if not loop.last or singbox_server_config.rule_sets | default([]) | length > 0 }}
 {% endfor %}
 {% if singbox_server_config.rule_sets | default([]) | length > 0 %}
 {% for rule_set in singbox_server_config.rule_sets %}
@@ -100,8 +114,11 @@
 {% endfor %}
     ],
 {% endif %}
-    "final": "out-direct",
-    "auto_detect_interface": true
+{% if singbox_server_config.route_defaults.keys() | default({}) | length > 0 %}
+{% for key, value in singbox_server_config.route_defaults.items() %}
+    "{{ key }}": {% if value in [True, False] %}{{ value | lower }}{% else %}"{{ value }}"{% endif %}{{ ',' if not loop.last }}
+{% endfor %}
+{% endif %}
   },
 {% endif %}
   "experimental": {
