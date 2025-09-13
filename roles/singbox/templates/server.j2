@@ -1,34 +1,12 @@
 
 {
-  "log": {
-    "disabled": false,
-    "level": "error",
-    "output": "box.log",
-    "timestamp": true
-  },
-{% if singbox_server_config.dns_servers | default([]) | length > 0 %}
+{% if (singbox_server_config.dns | default({})).items() | length > 0 %}
   "dns": {
-    "servers": [
-{% for dns_server in singbox_server_config.dns_servers %}
-      {{ dns_server | to_nice_json(indent=4, sort_keys=false) |
-      trim | indent(6) }}{{ ',' if not loop.last }}
+{% for key, value in singbox_server_config.dns.items() %}
+    {{ key | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}{{ ',' if not loop.last }}
 {% endfor %}
-{% if singbox_server_config.dns_rules | default([]) | length > 0 %}
-    ],
-    "rules": [
-{% for dns_rule in singbox_server_config.dns_rules %}
-      {{ dns_rule | to_nice_json(indent=4, sort_keys=false) |
-      trim | indent(6) }}{{ ',' if not loop.last }}
-{% endfor %}
-{% endif %}
-{% if singbox_server_config.dns_defaults.keys() | default({}) | length > 0 %}
-    ],
-{% for key, value in singbox_server_config.dns_defaults.items() %}
-    "{{ key }}": {% if value in [True, False] %}{{ value | lower }}{% else %}"{{ value }}"{% endif %}{{ ',' if not loop.last }}
-{% endfor %}
-{% else %}
-    ]
-{% endif %}
   },
 {% endif %}
 {% if singbox_server_config.endpoints | default([]) | length > 0 %}
@@ -81,44 +59,22 @@
 {% endfor %}
   ],
 {% endif %}
-{% if singbox_server_config.route_rules | default([]) | length > 0 %}
+{% if (singbox_server_config.route | default({})).items() | length > 0 %}
   "route": {
-    "rules": [
-{% for route_rule in singbox_server_config.route_rules %}
-      {{ route_rule | to_nice_json(indent=4, sort_keys=false) |
-      trim | indent(6) }}{{ ',' if not loop.last or singbox_server_config.rule_sets | default([]) | length > 0 }}
+{% for key, value in singbox_server_config.route.items() %}
+    {{ key | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}{{ ',' if not loop.last }}
 {% endfor %}
-{% if singbox_server_config.rule_sets | default([]) | length > 0 %}
-{% for rule_set in singbox_server_config.rule_sets %}
-      {
-{% for key, value in rule_set.items() if key in ['action', 'outbound', 'tag'] %}
-{% if key == 'tag' %}
-{% set parameter = 'rule_set' %}
-{% else %}
-{% set parameter = key %}
+  },
 {% endif %}
-        "{{ parameter }}": "{{ value }}"{{ ',' if not loop.last }}
+{% if (singbox_server_config.log | default({})).items() | length > 0 %}
+  "log": {
+{% for key, value in singbox_server_config.log.items() %}
+    {{ key | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}{{ ',' if not loop.last }}
 {% endfor %}
-      }{{ ',' if not loop.last }}
-{% endfor %}
-{% endif %}
-    ],
-{% if singbox_server_config.rule_sets | default([]) | length > 0 %}
-    "rule_set": [
-{% for rule_set in singbox_server_config.rule_sets %}
-      {
-{% for key, value in rule_set.items() if key not in ['action', 'outbound'] %}
-        "{{ key }}": "{{ value }}"{{ ',' if not loop.last }}
-{% endfor %}
-      }{{ ',' if not loop.last }}
-{% endfor %}
-    ],
-{% endif %}
-{% if singbox_server_config.route_defaults.keys() | default({}) | length > 0 %}
-{% for key, value in singbox_server_config.route_defaults.items() %}
-    "{{ key }}": {% if value in [True, False] %}{{ value | lower }}{% else %}"{{ value }}"{% endif %}{{ ',' if not loop.last }}
-{% endfor %}
-{% endif %}
   },
 {% endif %}
   "experimental": {
