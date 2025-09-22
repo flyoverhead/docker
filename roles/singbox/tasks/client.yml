@@ -51,5 +51,5 @@
 - name: client | add secrets to clients config
   ansible.builtin.set_fact:
     sing_box_add_clients: >-
-      {{ sing_box_add_clients | default([]) + [item |
-      combine({'uuid': client_uuid, 'short_id': client_short_id})] }}
+      {{ sing_box_add_clients | default([]) +
+      [{'name': item, 'uuid': client_uuid, 'short_id': client_short_id}] }}
