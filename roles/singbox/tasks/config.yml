@@ -75,7 +75,6 @@
     mode: '0644'
     lstrip_blocks: true
   notify:
-    - sing-box | start container
     - sing-box | restart container
 
 - name: config | create client configuration

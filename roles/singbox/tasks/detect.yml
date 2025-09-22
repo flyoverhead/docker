@@ -113,8 +113,7 @@
           ansible.builtin.set_fact:
             sing_box_inactive_clients: >-
               {{ sing_box_active_clients | default([]) |
-              rejectattr('name', 'in', singbox_clients_config.clients |
-              map(attribute='name')) }}
+              rejectattr('name', 'in', singbox_clients_config.clients) }}
 
     - name: detect | set sing_box_new_clients fact
       ansible.builtin.set_fact:
@@ -124,5 +123,5 @@
           singbox_force_update_secrets
           else
           singbox_clients_config.clients |
-          rejectattr('name', 'in', sing_box_active_clients |
+          difference(sing_box_active_clients |
           default([]) | map(attribute='name')) }}

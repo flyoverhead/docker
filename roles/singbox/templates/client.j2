@@ -1,20 +1,4 @@
 {
-{% if singbox_clients_config.clients |
-selectattr('name', 'equalto', item.name) |
-rejectattr('platform', 'undefined') |
-selectattr('platform', 'in', 'ios') | length == 0 %}
-{% set ios = false %}
-{% else %}
-{% set ios = true %}
-{% endif %}
-{% if singbox_clients_config.clients |
-selectattr('name', 'equalto', item.name) |
-rejectattr('platform', 'undefined') |
-selectattr('platform', 'in', 'android') | length == 0 %}
-{% set android = false %}
-{% else %}
-{% set android = true %}
-{% endif %}
 {% if (singbox_clients_config.dns | default({})).items() | length > 0 %}
   "dns": {
 {% for key, value in singbox_clients_config.dns.items() %}
