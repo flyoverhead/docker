@@ -6,7 +6,7 @@
 singbox_docker_config:
   name: sing-box
   image: ghcr.io/sagernet/sing-box
-  tag: v1.12.1
+  tag: v1.12.9
   path: '{{ docker_path }}/sing-box'
   restart_policy: always
   network_mode: host
@@ -19,6 +19,7 @@ singbox_server_config:
   public_address: '{{ ansible_host }}'
   vless_address: npo.nl
   vless_port: 443
+  dns_port: 53
   dns:
     servers: []
       # - tag: dns-local
@@ -188,9 +189,12 @@ singbox_clients_config:
   log:
     level: error
     timestamp: true
+  experimental:
+    cache_file:
+      enabled: true
 
 singbox_tuning_config:
-  enabled: true
+  enabled: false
   fs.file-max: 51200
   net.core.default_qdisc: fq
   net.ipv4.tcp_congestion_control: bbr

@@ -15,7 +15,7 @@
       tags:
         - singbox.docker
   when:
-    - not sing_box_container_exists
+    - not singbox_container_exists
   tags:
     - singbox.docker
 
@@ -23,7 +23,7 @@
   ansible.builtin.include_tasks:
     file: update.yml
   when:
-    - sing_box_container_update
+    - singbox_container_update
   tags:
     - singbox.docker
 

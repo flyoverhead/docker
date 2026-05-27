@@ -3,7 +3,7 @@
 - name: install | xray service folder
   become: true
   ansible.builtin.file:
-    path: '{{ xray_docker_config.path }}/data'
+    path: '{{ xray_docker_config.path }}'
     state: directory
     mode: '0755'
 

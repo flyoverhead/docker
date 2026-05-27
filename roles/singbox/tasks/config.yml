@@ -39,15 +39,15 @@
       ansible.builtin.include_tasks:
         file: server.yml
       when: >-
-        not sing_box_server_keys_exists
+        not singbox_server_keys_exists
         or singbox_force_update_secrets
 
     - name: config | add server keys to config
       ansible.builtin.set_fact:
         singbox_server_config: >-
           {{ singbox_server_config |
-          combine({'private_key': sing_box_private_key},
-          {'public_key': sing_box_public_key}) }}
+          combine({'private_key': singbox_private_key},
+          {'public_key': singbox_public_key}) }}
 
 - name: config | generate clients secrets
   block:
@@ -55,17 +55,17 @@
     - name: config | generate clients
       ansible.builtin.include_tasks:
         file: client.yml
-      loop: '{{ sing_box_new_clients | default([]) }}'
+      loop: '{{ singbox_new_clients | default([]) }}'
       loop_control:
-        index_var: sing_box_client
+        index_var: singbox_client
         label: '{{ item.name | default(item) }}'
 
-    - name: config | set sing_box_all_clients fact
+    - name: config | set singbox_all_clients fact
       ansible.builtin.set_fact:
-        sing_box_all_clients: >-
-          {{ (sing_box_active_clients | default([]) |
-          difference(sing_box_inactive_clients | default([]))) +
-          sing_box_add_clients | default([]) | sort(attribute='name') }}
+        singbox_all_clients: >-
+          {{ (singbox_active_clients | default([]) |
+          difference(singbox_inactive_clients | default([]))) +
+          singbox_add_clients | default([]) | sort(attribute='name') }}
 
 - name: config | create server configuration
   become: true
@@ -84,7 +84,7 @@
     dest: '{{ singbox_clients_config.path }}/{{ singbox_server_config.name }}-{{ item.name }}.json'
     mode: '0644'
     lstrip_blocks: true
-  loop: '{{ sing_box_all_clients }}'
+  loop: '{{ singbox_all_clients }}'
   loop_control:
     label: '{{ item.name }}'
 

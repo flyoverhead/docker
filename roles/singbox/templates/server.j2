@@ -23,7 +23,7 @@
       "listen": "{{ singbox_server_config.listening_address }}",
       "listen_port": {{ singbox_server_config.listening_port }},
       "users": [
-{% for client in sing_box_all_clients %}
+{% for client in singbox_all_clients %}
         {
           "name": "{{ client.name }}",
           "uuid": "{{ client.uuid }}",
@@ -42,11 +42,10 @@
             },
             "private_key": "{{ singbox_server_config.private_key }}",
             "short_id": [
-{% for client in sing_box_all_clients %}
+{% for client in singbox_all_clients %}
               "{{ client.short_id }}"{{ ',' if not loop.last }}
 {% endfor %}
-            ],
-            "max_time_difference": "5m"
+            ]
         }
       }
     }
@@ -77,9 +76,13 @@
 {% endfor %}
   },
 {% endif %}
+{% if (singbox_server_config.experimental | default({})).items() | length > 0 %}
   "experimental": {
-    "cache_file": {
-      "enabled": true
-    }
+{% for key, value in singbox_server_config.experimental.items() %}
+    {{ key | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}{{ ',' if not loop.last }}
+{% endfor %}
   }
+{% endif %}
 }

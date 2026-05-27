@@ -1,85 +1,201 @@
 ---
 
 # https://xtls.github.io/
+# https://github.com/XTLS/Xray-core/tags
 # https://hub.docker.com/r/teddysun/xray/tags
 
 xray_docker_config:
   name: xray
   image: teddysun/xray
-  tag: 24.11.30
+  tag: 26.3.23
   path: '{{ docker_path }}/xray'
   restart_policy: always
   network_mode: host
   timezone: Europe/Moscow
 
-xray_service_config:
+xray_server_config:
   name: '{{ inventory_hostname }}'
-  tag: proxy
   listening_address: 0.0.0.0
-  listening_port: 8443
+  listening_port: 443
   public_address: '{{ ansible_host }}'
-  vless_address: youtube.com
-  private_key: ''
-  public_key: ''
-  block:
-    domain: []
-    ip: []
-    port: []
-    protocol: []
-  direct:
-    domain: []
-    ip: []
-    port: []
-    protocol: []
-  proxy:
-    domain: []
-      # - ext:geosite_v2fly.dat:category-anticensorship
-      # - ext:geosite_v2fly.dat:category-dev
-      # - ext:geosite_v2fly.dat:google
-      # - ext:geosite_v2fly.dat:netflix
-      # - ext:geosite_v2fly.dat:youtube
-      # - ext:zkeen.dat:domains
-      # - ext:zkeen.dat:youtube
-    ip: []
-    port: []
-    protocol: []
+  vless_address: vk.com
+  vless_port: 443
+  dns_port: 53
+  dns:
+    servers: []
+      # - tag: dns-local
+      #   address: local
+      #   detour: out-direct
+      # - tag: dns-wg
+      #   address: 192.168.1.1
+      #   detour: out-wg
+      # - tag: dns-direct
+      #   address: https://common.dot.dns.yandex.net
+      #   address_resolver: dns-local
+      #   detour: out-direct
+    rules: []
+      # - outbound: out-direct
+      #   server: dns-direct
+      # - outbound: out-wg
+      #   server: dns-wg
+    # final: dns-local
+    # strategy: ipv4_only
+    # independent_cache: true
+  endpoints: []
+    # - tag: out-wg
+    #   type: wireguard
+    #   system: true
+    #   name: wg0
+    #   address:
+    #     - 192.168.1.2/32
+    #   private_key: <private_key>
+    #   listen_port: 51832
+    #   peers:
+    #     - address: <peer_ip_address>
+    #       port: 51832
+    #       public_key: <peer_public_key>
+    #       allowed_ips:
+    #         - 192.168.1.0/24
+    #       persistent_keepalive_interval: 25
+  outbounds: []
+    # - type: direct
+    #   tag: out-direct
+  route:
+    rules: []
+      # - inbound: tun-in
+      #   action: sniff
+      # - protocol: dns
+      #   action: hijack-dns
+      # - domain:
+      #     - home.lab
+      #   outbound: out-wg
+      # - rule_set:
+      #     - geosite-category-ads
+      #   action: reject
+    rule_set: []
+      # - tag: geosite-category-ads
+      #   type: remote
+      #   format: binary
+      #   url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ads.srs
+    default_domain_resolver:
+      server: local
+    final: out-direct
+    auto_detect_interface: true
+  log:
+    level: error
+    output: box.log
+    timestamp: true
 
 xray_clients_config:
-  path: '{{ role_path }}/files/clients' # save configuration files here
-  clients: []
-    # - name: router
-    #   protocol: dokodemo-door
-    # - name: smaptphone
-    #   protocol: socks
-
-xray_geofiles: []
-  # - name: geodata_antizapret
-  #   repo: warexify/antizapret-xray
-  #   file: antizapret.dat
-  # - name: geodata_v2fly
-  #   repo: v2fly/domain-list-community
-  #   file: dlc.dat
-  # - name: geoip_v2fly
-  #   repo: loyalsoldier/v2ray-rules-dat
-  #   file: geoip.dat
-  # - name: geosite_antizapret
-  #   repo: warexify/antizapret-xray
-  #   file: antizapret.dat
-  # - name: geosite_v2fly
-  #   repo: v2fly/domain-list-community
-  #   file: dlc.dat
-  # - name: zkeen
-  #   repo: jameszeroX/zkeen-domains
-  #   file: zkeen.dat
-  # - name: zkeenip
-  #   repo: jameszeroX/zkeen-ip
-  #   file: zkeenip.dat
-xray_geofiles_path:
-  src: '{{ role_path }}/files/geosites'
-  dst: '{{ xray_docker_config.path }}/data'
+  path: '{{ inventory_dir }}/files/clients'
+  clients:
+    - name: keenetic_router
+    - name: smartphone
+      platform: android
+    - name: iphone
+      platform: ios
+    - name: macbook
+      platform: macos
+  dns:
+    servers: []
+      # - tag: dns-direct
+      #   address: local
+      #   detour: out-direct
+      # - tag: dns-proxy
+      #   address: https://dns.adguard-dns.com/dns-query
+      #   address_resolver: dns-direct
+      #   detour: out-proxy
+    rules: []
+    #   - outbound: out-direct
+    #     server: dns-direct
+    #   - domain_keyword:
+    #       - example
+    #     server: dns-proxy
+    #   - rule_set:
+    #       - geoip-ru
+    #       - geosite-category-gov-ru
+    #       - geosite-category-ru
+    #     server: dns-proxy
+    final: dns-direct
+    strategy: ipv4_only
+    independent_cache: true
+  inbounds: []
+    # - type: tun
+    #   tag: tun-in
+    #   interface_name: tun0
+    #   address: 172.18.0.1/30
+    #   auto_route: true
+  outbounds: []
+    # - type: vless
+    #   tag: out-nl
+    #   server: '{{ ansible_host }}'
+    #   server_port: 443
+    #   uuid: '{{ item.uuid | default("") }}'
+    #   flow: xtls-rprx-vision
+    #   tls:
+    #     enabled: true
+    #     server_name: youtube.com
+    #     utls:
+    #       enabled: true
+    #       fingerprint: chrome
+    #     reality:
+    #       enabled: true
+    #       public_key: '{{ xray_server_config.public_key | default("") }}'
+    #       short_id: '{{ item.short_id | default("") }}'
+    #   domain_resolver:
+    #     server: dns-proxy
+    # - type: direct
+    #   tag: out-direct
+    #   domain_resolver:
+    #     server: dns-direct
+  endpoints: []
+    # - tag: out-wg
+    #   type: wireguard
+    #   system: true
+    #   name: wg0
+    #   address:
+    #     - 192.168.1.2/32
+    #   private_key: <private_key>
+    #   listen_port: 51832
+    #   peers:
+    #     - address: <peer_ip_address>
+    #       port: 51832
+    #       public_key: <peer_public_key>
+    #       allowed_ips:
+    #         - 192.168.1.0/24
+    #       persistent_keepalive_interval: 25
+  route:
+    rules:
+      # - inbound: tun-in
+      #   action: sniff
+      # - protocol: dns
+      #   action: hijack-dns
+      # - domain:
+      #     - example.com
+      #   outbound: out-proxy
+      # - domain_regex:
+      #     - example.+
+      #   outbound: out-proxy
+      # - rule_set:
+      #     - geosite-category-ads
+      #   action: reject
+    rule_set:
+      - tag: geosite-category-ads
+        type: remote
+        format: binary
+        url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ads.srs
+    default_domain_resolver:
+      server: dns-direct
+    auto_detect_interface: true
+  log:
+    level: error
+    timestamp: true
+  experimental:
+    cache_file:
+      enabled: true
 
 xray_tuning_config:
-  enabled: true
+  enabled: false
   fs.file-max: 51200
   net.core.default_qdisc: fq
   net.ipv4.tcp_congestion_control: bbr

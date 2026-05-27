@@ -58,9 +58,13 @@
 {% endfor %}
   },
 {% endif %}
+{% if (singbox_clients_config.experimental | default({})).items() | length > 0 %}
   "experimental": {
-    "cache_file": {
-      "enabled": true
-    }
+{% for key, value in singbox_clients_config.experimental.items() %}
+    {{ key | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}{{ ',' if not loop.last }}
+{% endfor %}
   }
+{% endif %}
 }

@@ -8,12 +8,12 @@
     cleanup: true
     command: generate reality-keypair
     detach: false
-  register: sing_box_keys
+  register: singbox_keys
 
 - name: config | set server keys fact
   ansible.builtin.set_fact:
-    sing_box_private_key: >-
-      {{ sing_box_keys.container.Output | regex_search('(?<=PrivateKey: )(.*?)(?=\n)') }}
-    sing_box_public_key: >-
-      {{ sing_box_keys.container.Output | regex_search('(?<=PublicKey: )(.*?)(?=\n)') }}
+    singbox_private_key: >-
+      {{ singbox_keys.container.Output | regex_search('(?<=PrivateKey: )(.*?)(?=\n)') }}
+    singbox_public_key: >-
+      {{ singbox_keys.container.Output | regex_search('(?<=PublicKey: )(.*?)(?=\n)') }}
   no_log: true

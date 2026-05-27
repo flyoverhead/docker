@@ -36,9 +36,9 @@
       sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (3, '{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'domain_black.list').splitlines() }}"
-  register: result
+  register: pihole_result
   changed_when: True
-  failed_when: result.rc > 0 and result.rc != 19
+  failed_when: pihole_result.rc > 0 and pihole_result.rc != 19
 
 - name: pihole | clean domain whitelist
   become: true
@@ -53,9 +53,9 @@
       sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (2, '{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'domain_white.list').splitlines() }}"
-  register: result
+  register: pihole_result
   changed_when: True
-  failed_when: result.rc > 0 and result.rc != 19
+  failed_when: pihole_result.rc > 0 and pihole_result.rc != 19
 
 - name: pihole | add adlist
   become: true
@@ -64,9 +64,9 @@
       sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
       "INSERT INTO adlist (address, enabled, comment) VALUES ('{{ item }}', 1, '')"
   loop: "{{ lookup('file', 'adlist.list').splitlines() }}"
-  register: result
+  register: pihole_result
   changed_when: True
-  failed_when: result.rc > 0 and result.rc != 19
+  failed_when: pihole_result.rc > 0 and pihole_result.rc != 19
 
 - name: pihole | update gravity
   community.docker.docker_container_exec:

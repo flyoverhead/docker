@@ -32,14 +32,6 @@
       when:
         - xray_tuning_config.enabled
 
-- name: config | block regex list
-  ansible.builtin.set_fact:
-    block_domain_regex: >-
-      {{ ['regex:'] |
-      product(lookup('file', 'block_regex.list').splitlines()) |
-      map('join') |
-      list }}
-
 - name: config | server secrets
   block:
 
@@ -52,8 +44,8 @@
 
     - name: config | add server keys to config
       ansible.builtin.set_fact:
-        xray_service_config: >-
-          {{ xray_service_config |
+        xray_server_config: >-
+          {{ xray_server_config |
           combine({'private_key': xray_private_key},
           {'public_key': xray_public_key}) }}
 
@@ -66,13 +58,14 @@
       loop: '{{ xray_new_clients | default([]) }}'
       loop_control:
         index_var: xray_client
+        label: '{{ item.email | default(item) }}'
 
     - name: config | set xray_all_clients fact
       ansible.builtin.set_fact:
         xray_all_clients: >-
           {{ (xray_active_clients | default([]) |
           difference(xray_inactive_clients | default([]))) +
-          xray_add_clients | default([]) | sort(attribute='name') }}
+          xray_add_clients | default([]) | sort(attribute='email') }}
 
 - name: config | create server configuration
   become: true
@@ -88,16 +81,16 @@
   delegate_to: localhost
   ansible.builtin.template:
     src: client.j2
-    dest: '{{ xray_clients_config.path }}/{{ item.name }}.json'
+    dest: '{{ xray_clients_config.path }}/{{ xray_server_config.name }}-{{ item.email }}.json'
     mode: '0644'
     lstrip_blocks: true
   loop: '{{ xray_all_clients }}'
   loop_control:
-    label: '{{ item.name }}'
+    label: '{{ item.email }}'
 
-- name: config | create geofiles
-  ansible.builtin.include_tasks:
-    file: geofile.yml
-  loop: '{{ xray_geofiles }}'
-  loop_control:
-    loop_var: geofile
+- name: config | save public key
+  become: true
+  ansible.builtin.copy:
+    content: '{{ xray_server_config.public_key }}'
+    dest: '{{ xray_docker_config.path }}/public_key'
+    mode: '0644'
