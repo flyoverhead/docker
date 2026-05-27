@@ -1,4 +1,4 @@
-# flyoverhead.docker.prometheus
+# `flyoverhead.docker.prometheus`
 
 `Prometheus` docker service deployment.
 
@@ -22,7 +22,7 @@ Alerting rules can be added by placing rules files to `files` directory, e.g., `
 | Name | Description |
 | :--- | :--- |
 | `flyoverhead.docker.docker` | [README.md](../docker/README.md) |
-| `flyoverhead.docker.node-exporter` | [README.md](../node-exporter/README.md) |
+| `flyoverhead.docker.node_exporter` | [README.md](../node_exporter/README.md) |
 | `flyoverhead.docker.alertmanager` | [README.md](../alertmanager/README.md) |
 
 ## Example playbook
@@ -31,7 +31,7 @@ Alerting rules can be added by placing rules files to `files` directory, e.g., `
 - hosts: host
   roles:
       - role: flyoverhead.docker.docker
-      - role: flyoverhead.docker.node-exporter
+      - role: flyoverhead.docker.node_exporter
       - role: flyoverhead.docker.prometheus
       - role: flyoverhead.docker.alertmanager
 ```

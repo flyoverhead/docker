@@ -1,15 +1,16 @@
-# `docker.singbox`
+# `flyoverhead.docker.singbox`
 
-`Sing-Box VPN` docker service deployment.
+`Sing-Box VPN` (VLESS + REALITY) docker service deployment.
 
 ## Role variables
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
 | `singbox_docker_config` | Docker configuration | Definition example in [defaults.yml](defaults/main.yml) |
-| `singbox_server_config` | Service configuration | Definition example in [defaults.yml](defaults/main.yml) |
+| `singbox_server_config` | Server configuration | Definition example in [defaults.yml](defaults/main.yml) |
 | `singbox_clients_config` | Clients configuration | Definition example in [defaults.yml](defaults/main.yml) |
-| `singbox_tuning_config` | Server shadowsocks optimization [parameters](https://shadowsocks.org/doc/advanced.html#step-2-tune-the-kernel-parameters) | Definition example in [defaults.yml](defaults/main.yml) |
+| `singbox_tuning_config` | Server kernel optimization parameters | Definition example in [defaults.yml](defaults/main.yml) |
+| `singbox_force_update_secrets` | Force regeneration of server keys and client secrets | `false` |
 
 ## Dependencies
 
@@ -45,11 +46,8 @@ singbox_server_config:
   public_address: '{{ ansible_host }}'
   vless_address: npo.nl
   vless_port: 443
-  dns_servers: []
-  dns_rules: []
-  endpoints: []
-  route_rules: []
-  rule_sets: []
+  dns_port: 53
+  # dns, endpoints, outbounds, route and log: see defaults/main.yml for the full structure
 ```
 
 ## Clients list example
@@ -65,138 +63,38 @@ singbox_clients_config:
       platform: ios
     - name: macbook
       platform: macos
-  dns_servers:
-    - tag: dns-local
-      address: local
-      detour: out-direct
-    - tag: dns-proxy
-      address: https://dns.adguard-dns.com/dns-query
-      address_resolver: dns-local
-      detour: out-proxy
-    - tag: dns-direct
-      address: https://common.dot.dns.yandex.net
-      address_resolver: dns-local
-      detour: out-direct
-  dns_rules:
-    - outbound: out-direct
+  dns:
+    servers:
+      - tag: dns-direct
+        address: local
+        detour: out-direct
+      - tag: dns-proxy
+        address: https://dns.adguard-dns.com/dns-query
+        address_resolver: dns-direct
+        detour: out-proxy
+    rules:
+      - outbound: out-direct
+        server: dns-direct
+    final: dns-direct
+    strategy: ipv4_only
+    independent_cache: true
+  route:
+    rules:
+      - protocol: dns
+        action: hijack-dns
+      - domain:
+          - 4pda.to
+        outbound: out-proxy
+    rule_set:
+      - tag: geosite-category-ads
+        type: remote
+        format: binary
+        url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ads.srs
+        action: reject
+    default_domain_resolver:
       server: dns-direct
-    - outbound: out-proxy
-      server: dns-proxy
-  route_rules:
-    - inbound: tun-in
-      action: sniff
-    - protocol: dns
-      action: hijack-dns
-    - protocol: bittorrent
-      outbound: out-direct
-    - domain:
-        - 4pda.to
-      outbound: out-proxy
-    - domain_regex:
-        - anthropic.+
-        - claude.+
-      outbound: out-proxy
-  rule_sets:
-    - tag: geosite-category-ads
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ads.srs
-      action: reject
-    - tag: antizapret
-      type: remote
-      format: binary
-      url: https://github.com/savely-krasovsky/antizapret-sing-box/releases/latest/download/antizapret.srs
-      outbound: out-proxy
-    - tag: geoip-ru
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geoip/rule-set/geoip-ru.srs
-      outbound: out-direct
-    - tag: geosite-category-anticensorship
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-anticensorship.srs
-      outbound: out-proxy
-    - tag: geosite-category-communication
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-communication.srs
-      outbound: out-proxy
-    - tag: geosite-category-companies
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-companies.srs
-      outbound: out-proxy
-    - tag: geosite-category-cryptocurrency
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-cryptocurrency.srs
-      outbound: out-proxy
-    - tag: geosite-category-ecommerce
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ecommerce.srs
-      outbound: out-proxy
-    - tag: geosite-category-dev
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-dev.srs
-      outbound: out-proxy
-    - tag: geosite-category-entertainment
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-entertainment.srs
-      outbound: out-proxy
-    - tag: geosite-category-gov-ru
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-gov-ru.srs
-      outbound: out-direct
-    - tag: geosite-category-porn
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-porn.srs
-      outbound: out-proxy
-    - tag: geosite-category-ru
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-category-ru.srs
-      outbound: out-direct
-    - tag: geosite-google-gemini
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-gemini.srs
-      outbound: out-proxy
-    - tag: geosite-google-play
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-play.srs
-      outbound: out-proxy
-    - tag: geosite-google-registry
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-registry.srs
-      outbound: out-proxy
-    - tag: geosite-google-trust-services
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google-trust-services.srs
-      outbound: out-proxy
-    - tag: geosite-google
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-google.srs
-      outbound: out-proxy
-    - tag: geosite-googlefcm
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-googlefcm.srs
-      outbound: out-proxy
-    - tag: geosite-instagram
-      type: remote
-      format: binary
-      url: https://raw.githubusercontent.com/sagernet/sing-geosite/rule-set/geosite-instagram.srs
-      outbound: out-proxy
+    auto_detect_interface: true
+  # inbounds, outbounds, endpoints, log and experimental: see defaults/main.yml for the full structure
 ```
 
 ## License

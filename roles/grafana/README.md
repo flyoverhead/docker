@@ -17,7 +17,7 @@
 | Name | Description |
 | :--- | :--- |
 | `flyoverhead.docker.docker` | [README.md](../docker/README.md) |
-| `flyoverhead.docker.node-exporter` | [README.md](../node-exporter/README.md) |
+| `flyoverhead.docker.node_exporter` | [README.md](../node_exporter/README.md) |
 | `flyoverhead.docker.prometheus` | [README.md](../prometheus/README.md) |
 | `flyoverhead.docker.alertmanager` | [README.md](../alertmanager/README.md) |
 
@@ -27,7 +27,7 @@
 - hosts: docker
   roles:
       - role: flyoverhead.docker.docker
-      - role: flyoverhead.docker.node-exporter
+      - role: flyoverhead.docker.node_exporter
       - role: flyoverhead.docker.prometheus
       - role: flyoverhead.docker.alertmanager
       - role: flyoverhead.docker.grafana

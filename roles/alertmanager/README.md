@@ -22,7 +22,7 @@ Custom messages templates can be added by placing templates files to `files` dir
 | Name | Description |
 | :--- | :--- |
 | `flyoverhead.docker.docker` | [README.md](../docker/README.md) |
-| `flyoverhead.docker.node-exporter` | [README.md](../node-exporter/README.md) |
+| `flyoverhead.docker.node_exporter` | [README.md](../node_exporter/README.md) |
 | `flyoverhead.docker.prometheus` | [README.md](../prometheus/README.md) |
 
 ## Example playbook
