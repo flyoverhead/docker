@@ -72,14 +72,18 @@
     - name: detect | set xray_private_key fact
       ansible.builtin.set_fact:
         xray_private_key: >-
-          {{ xray_database_file_content |
+          {{ xray_server_config.private_key
+          if xray_server_config.private_key | default('') | length > 0
+          else (xray_database_file_content |
           selectattr('streamSettings', 'search', xray_server_config.vless_address) |
-          map(attribute='streamSettings.realitySettings.privateKey') | join('') }}
+          map(attribute='streamSettings.realitySettings.privateKey') | join('')) }}
 
     - name: detect | set xray_public_key fact
       ansible.builtin.set_fact:
         xray_public_key: >-
-          {{ xray_public_key_file_content }}
+          {{ xray_server_config.public_key
+          if xray_server_config.public_key | default('') | length > 0
+          else xray_public_key_file_content }}
 
     - name: detect | set xray_server_keys_exists fact
       ansible.builtin.set_fact:
@@ -89,6 +93,15 @@
           and
           xray_public_key | default('') | length > 0
           else false }}
+
+    - name: detect | normalize configured clients
+      ansible.builtin.set_fact:
+        xray_configured_clients: >-
+          {{ xray_configured_clients | default([]) +
+          [item if item is mapping else {'email': item}] }}
+      loop: '{{ xray_clients_config.clients | default([]) }}'
+      loop_control:
+        label: '{{ item.email | default(item) }}'
 
     - name: detect | get xray database facts
       when:
@@ -109,19 +122,18 @@
             label: '{{ item.email }}'
             index_var: xray_client
 
-        - name: detect | set xray_new_clients fact
+        - name: detect | set xray_inactive_clients fact
           ansible.builtin.set_fact:
             xray_inactive_clients: >-
               {{ xray_active_clients | default([]) |
-              rejectattr('email', 'in', xray_clients_config.clients) }}
+              rejectattr('email', 'in',
+              xray_configured_clients | default([]) | map(attribute='email') | list) | list }}
 
     - name: detect | set xray_new_clients fact
       ansible.builtin.set_fact:
         xray_new_clients: >-
-          {{ xray_clients_config.clients
-          if
-          xray_force_update_secrets
-          else
-          xray_clients_config.clients |
-          difference(xray_active_clients |
-          default([]) | map(attribute='email')) }}
+          {{ xray_configured_clients | default([])
+          if xray_force_update_secrets
+          else (xray_configured_clients | default([]) |
+          rejectattr('email', 'in',
+          xray_active_clients | default([]) | map(attribute='email') | list) | list) }}

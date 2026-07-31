@@ -39,8 +39,9 @@
       ansible.builtin.include_tasks:
         file: server.yml
       when: >-
-        not xray_server_keys_exists
-        or xray_force_update_secrets
+        not (xray_server_config.private_key | default('') | length > 0
+        and xray_server_config.public_key | default('') | length > 0)
+        and (not xray_server_keys_exists or xray_force_update_secrets)
 
     - name: config | add server keys to config
       ansible.builtin.set_fact:
@@ -66,6 +67,16 @@
           {{ (xray_active_clients | default([]) |
           difference(xray_inactive_clients | default([]))) +
           xray_add_clients | default([]) | sort(attribute='email') }}
+
+- name: config | set reality settings fact
+  ansible.builtin.set_fact:
+    xray_reality_settings:
+      target: '{{ xray_server_config.vless_address }}:{{ xray_server_config.target_port }}'
+      serverNames:
+        - '{{ xray_server_config.vless_address }}'
+      privateKey: '{{ xray_server_config.private_key }}'
+      shortIds: "{{ xray_all_clients | map(attribute='shortId') | list }}"
+  no_log: true
 
 - name: config | create server configuration
   become: true

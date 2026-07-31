@@ -22,6 +22,14 @@ xray_server_config:
   vless_address: vk.com
   target_port: 443
   dns_port: 53
+  flow: xtls-rprx-vision
+  stream_settings:
+    network: tcp
+    security: reality
+  # Reuse a previously generated REALITY key pair instead of generating a new
+  # one. When both values are set, the `xray x25519` generation is skipped.
+  # private_key: ''
+  # public_key: ''
   dns:
     servers: []
       # - 1.1.1.1
@@ -51,13 +59,15 @@ xray_server_config:
 xray_clients_config:
   path: '{{ inventory_dir }}/files/clients'
   clients:
-    - name: keenetic_router
-    - name: smartphone
-      platform: android
-    - name: iphone
-      platform: ios
-    - name: macbook
-      platform: macos
+    - android
+    - iphone
+    - macbook
+    # A client may also be defined as a mapping to reuse previously generated
+    # secrets. When both `id` and `shortId` are set, the `xray uuid` and
+    # `openssl rand` generation is skipped for that client.
+    # - email: keenetic
+    #   id: 11111111-2222-3333-4444-555555555555
+    #   shortId: 0123456789abcdef
   dns:
     servers: []
       # - 1.1.1.1

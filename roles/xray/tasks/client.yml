@@ -1,11 +1,14 @@
 ---
 
+- name: client | reset generated secrets
+  ansible.builtin.set_fact:
+    xray_generated_client_uuid: ''
+    xray_generated_client_short_id: ''
+
 - name: client | generate secrets
   when: >-
-    (item.id | default('') | length == 0
-    and
-    item.shortId | default('') | length == 0)
-    or xray_force_update_secrets
+    item.id | default('') | length == 0
+    or item.shortId | default('') | length == 0
   block:
 
     - name: client | generate uuid
@@ -40,16 +43,16 @@
 - name: client | set uuid and short id facts
   ansible.builtin.set_fact:
     xray_client_uuid: >-
-      {{ xray_generated_client_uuid if
-      xray_generated_client_uuid | default([]) | length > 0
-      else item.id }}
+      {{ xray_generated_client_uuid
+      if xray_generated_client_uuid | default('') | length > 0
+      else item.id | default('') }}
     xray_client_short_id: >-
-      {{ xray_generated_client_short_id if
-      xray_generated_client_short_id | default([]) | length > 0
-      else item.shortId }}
+      {{ xray_generated_client_short_id
+      if xray_generated_client_short_id | default('') | length > 0
+      else item.shortId | default('') }}
 
 - name: client | add secrets to clients config
   ansible.builtin.set_fact:
     xray_add_clients: >-
       {{ xray_add_clients | default([]) +
-      [{'email': item, 'id': xray_client_uuid, 'shortId': xray_client_short_id}] }}
+      [{'email': item.email, 'id': xray_client_uuid, 'shortId': xray_client_short_id}] }}

@@ -57,14 +57,41 @@ xray_server_config:
 xray_clients_config:
   path: '{{ inventory_dir }}/files/clients'
   clients:
-    - name: keenetic_router
-    - name: smartphone
-      platform: android
-    - name: iphone
-      platform: ios
-    - name: macbook
-      platform: macos
+    - keenetic_router
+    - smartphone
+    - macbook
   # dns, inbounds, outbounds, routing and log: see defaults/main.yml for the full structure
+```
+
+## Predefined secrets
+
+By default the role generates the server `REALITY` key pair (`xray x25519`) and
+each client's `id`/`shortId` (`xray uuid` + `openssl rand`), and reuses any
+values already present on the host (`config.json` / `public_key`).
+
+To reuse previously generated secrets and skip the generation tasks, define the
+values explicitly. This is useful for rebuilding a host from scratch or storing
+secrets in a vault.
+
+Server keys — when both `private_key` and `public_key` are set, `xray x25519`
+is skipped:
+
+```yaml
+xray_server_config:
+  private_key: SERVER_PRIVATE_KEY
+  public_key: SERVER_PUBLIC_KEY
+```
+
+Client secrets — define a client as a mapping; when both `id` and `shortId` are
+set, generation is skipped for that client (plain strings still auto-generate):
+
+```yaml
+xray_clients_config:
+  clients:
+    - android
+    - email: keenetic_router
+      id: 11111111-2222-3333-4444-555555555555
+      shortId: 0123456789abcdef
 ```
 
 ## License

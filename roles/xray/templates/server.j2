@@ -21,28 +21,17 @@
           {
             "email": "{{ client.email }}",
             "id": "{{ client.id }}",
-            "flow": "xtls-rprx-vision"
+            "flow": "{{ xray_server_config.flow }}"
           }{{ ',' if not loop.last }}
 {% endfor %}
         ],
         "decryption": "none"
       },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "target": "{{ xray_server_config.vless_address }}:{{ xray_server_config.target_port }}",
-          "serverNames": [
-            "{{ xray_server_config.vless_address }}"
-          ],
-          "privateKey": "{{ xray_server_config.private_key }}",
-          "shortIds": [
-{% for client in xray_all_clients %}
-            "{{ client.shortId }}"{{ ',' if not loop.last }}
-{% endfor %}
-          ]
-        }
-      },
+      "streamSettings": {{ xray_server_config.stream_settings |
+      combine({'realitySettings':
+        (xray_server_config.stream_settings.realitySettings | default({}))
+        | combine(xray_reality_settings)}) |
+      to_nice_json(indent=2, sort_keys=false) | trim | indent(6) }},
       "sniffing": {
           "enabled": true,
           "destOverride": [
