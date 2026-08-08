@@ -61,12 +61,16 @@
         index_var: xray_client
         label: '{{ item.email | default(item) }}'
 
+    # Parenthesised deliberately: Jinja binds a filter tighter than '+', so
+    # `a + b | sort` sorts only b and leaves the concatenation unordered.
+    # Sorting the whole list keeps the rendered config.json stable regardless
+    # of the order clients were detected or added in.
     - name: config | set xray_all_clients fact
       ansible.builtin.set_fact:
         xray_all_clients: >-
-          {{ (xray_active_clients | default([]) |
+          {{ ((xray_active_clients | default([]) |
           difference(xray_inactive_clients | default([]))) +
-          xray_add_clients | default([]) | sort(attribute='email') }}
+          (xray_add_clients | default([]))) | sort(attribute='email') }}
 
 - name: config | set reality settings fact
   ansible.builtin.set_fact:

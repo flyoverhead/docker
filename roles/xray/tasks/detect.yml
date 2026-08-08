@@ -36,11 +36,6 @@
         path: '{{ xray_docker_config.path }}/config.json'
       register: xray_database_file
 
-    - name: detect | check public key file
-      ansible.builtin.stat:
-        path: '{{ xray_docker_config.path }}/public_key'
-      register: xray_public_key_file
-
     - name: detect | read database file
       become: true
       ansible.builtin.slurp:
@@ -49,24 +44,15 @@
       when:
         - xray_database_file.stat.exists
 
-    - name: detect | read public key file
-      become: true
-      ansible.builtin.slurp:
-        src: '{{ xray_docker_config.path }}/public_key'
-      register: xray_slurp_public_key_file
-      when:
-        - xray_public_key_file.stat.exists
-
+    # The public_key file is still written by config.yml for operators and
+    # external tooling, but it is no longer read back: the public key is
+    # derived from the private key below.
     - name: detect | set xray_database_file_content fact
       ansible.builtin.set_fact:
         xray_database_file_content: >-
           {{ xray_slurp_database_file.content | b64decode |
           from_json | json_query("inbounds")
           if xray_database_file.stat.exists
-          else '' }}
-        xray_public_key_file_content: >-
-          {{ xray_slurp_public_key_file.content | b64decode
-          if xray_public_key_file.stat.exists
           else '' }}
 
     # Locate the inbound this role owns by its tag. Searching the deployed
@@ -103,12 +89,35 @@
           if xray_server_config.private_key | default('') | length > 0
           else xray_deployed_reality.privateKey | default('') }}
 
+    # Derive the public key from the private key rather than reading back the
+    # public_key file. The file is a second source of truth for one keypair:
+    # if it and the privateKey in config.json ever disagree, the role hands
+    # clients a public key the server will not answer to. Deriving makes that
+    # unrepresentable. Skipped when no private key is known yet, so a fresh
+    # host still falls through to generation in server.yml.
+    - name: detect | derive public key from private key
+      become: true
+      community.docker.docker_container:
+        name: '{{ xray_docker_config.name }}-runtime'
+        image: '{{ xray_docker_config.image }}:{{ xray_docker_config.tag }}'
+        cleanup: true
+        command: xray x25519 -i {{ xray_private_key }}
+        detach: false
+      register: xray_derived_public_key
+      changed_when: false
+      no_log: true
+      when:
+        - xray_server_config.public_key | default('') | length == 0
+        - xray_private_key | default('') | length > 0
+
     - name: detect | set xray_public_key fact
       ansible.builtin.set_fact:
         xray_public_key: >-
           {{ xray_server_config.public_key
           if xray_server_config.public_key | default('') | length > 0
-          else xray_public_key_file_content }}
+          else (xray_derived_public_key.container.Output | default('') |
+          regex_search('(?<=Password \(PublicKey\): )(.*?)(?=\n)') |
+          default('', true)) }}
 
     - name: detect | set xray_server_keys_exists fact
       ansible.builtin.set_fact:

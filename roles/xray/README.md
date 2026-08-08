@@ -67,7 +67,15 @@ xray_clients_config:
 
 By default the role generates the server `REALITY` key pair (`xray x25519`) and
 each client's `id`/`shortId` (`xray uuid` + `openssl rand`), and reuses any
-values already present on the host (`config.json` / `public_key`).
+values already present on the host.
+
+Reuse reads from a single source: the deployed `config.json`. The role finds
+its own inbound there by `tag` (`xray_server_config.tag`), takes the private key
+and the client list off it, and derives the public key from that private key.
+The `public_key` file on the host is written for convenience but never read
+back, so it cannot drift from the deployed key pair. If the inbound cannot be
+located while a `config.json` exists, the role fails rather than silently
+reissuing every credential.
 
 To reuse previously generated secrets and skip the generation tasks, define the
 values explicitly. This is useful for rebuilding a host from scratch or storing
