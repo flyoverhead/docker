@@ -65,12 +65,24 @@
     # `a + b | sort` sorts only b and leaves the concatenation unordered.
     # Sorting the whole list keeps the rendered config.json stable regardless
     # of the order clients were detected or added in.
+    #
+    # One entry per email, last occurrence winning. `unique` keeps the first
+    # match, so the list is reversed first: that makes a freshly issued
+    # credential in xray_add_clients beat the active one it replaces, which is
+    # what xray_force_update_secrets is for. Without this the reissued client
+    # was appended rather than substituted, so the server kept accepting the
+    # old credential, the inbound doubled, and the two entries for one email
+    # rendered to the same client profile path -- leaving that task reporting
+    # changed on every run forever. It also collapses a host that already
+    # doubled: duplicates read back from config.json are ordered oldest-first,
+    # so the surviving entry is the newer one.
     - name: config | set xray_all_clients fact
       ansible.builtin.set_fact:
         xray_all_clients: >-
           {{ ((xray_active_clients | default([]) |
           difference(xray_inactive_clients | default([]))) +
-          (xray_add_clients | default([]))) | sort(attribute='email') }}
+          (xray_add_clients | default([]))) | reverse | list |
+          unique(attribute='email') | sort(attribute='email') }}
 
 - name: config | set reality settings fact
   ansible.builtin.set_fact:
