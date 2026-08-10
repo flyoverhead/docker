@@ -8,9 +8,11 @@
 {% endfor %}
   },
 {% endif %}
-{% if xray_clients_config.inbounds | default([]) | length > 0 %}
+{% set client_inbounds = (xray_client_inbounds | default({}))[item.email | default('')]
+   | default(xray_clients_config.inbounds | default([])) %}
+{% if client_inbounds | length > 0 %}
   "inbounds": [
-{% for inbound in xray_clients_config.inbounds %}
+{% for inbound in client_inbounds %}
     {
 {% for key, value in inbound.items() %}
       {{ key | to_nice_json(sort_keys=false) |
