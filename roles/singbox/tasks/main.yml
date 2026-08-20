@@ -1,5 +1,8 @@
 ---
 
+# detect.yml carries its own tags on the `sing-box docker` and `database`
+# blocks, so it deliberately has no `apply` -- adding one would make every
+# tagged run expand both blocks instead of just the one that was asked for.
 - name: detect
   ansible.builtin.include_tasks:
     file: detect.yml
@@ -8,6 +11,12 @@
     - singbox.docker
     - singbox.server
 
+# `apply` is required, not optional, on the includes below: tags on a dynamic
+# include_tasks decide only whether the include itself expands -- they are not
+# pushed onto the included tasks. install.yml, update.yml and config.yml carry
+# no tags of their own, so without `apply` a tagged run would expand the include
+# and then filter out everything inside it, reporting ok=1 changed=0 while
+# rendering nothing at all.
 - name: install
   ansible.builtin.include_tasks:
     file: install.yml
@@ -15,21 +24,32 @@
       tags:
         - singbox.docker
   when:
-    - not sing_box_container_exists
+    - not singbox_container_exists
   tags:
     - singbox.docker
 
 - name: update
   ansible.builtin.include_tasks:
     file: update.yml
+    apply:
+      tags:
+        - singbox.docker
   when:
-    - sing_box_container_update
+    - singbox_container_update
   tags:
     - singbox.docker
 
+# Reached by singbox.docker and singbox.tuning, but the client and key facts it
+# consumes are set by detect.yml's `detect | database` block, which is tagged
+# singbox.clients/singbox.server. A tagged client render therefore needs BOTH,
+# e.g. --tags singbox.clients,singbox.docker.
 - name: config
   ansible.builtin.include_tasks:
     file: config.yml
+    apply:
+      tags:
+        - singbox.docker
+        - singbox.tuning
   tags:
     - singbox.docker
     - singbox.tuning

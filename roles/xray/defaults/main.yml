@@ -1,85 +1,146 @@
 ---
 
 # https://xtls.github.io/
+# https://github.com/XTLS/Xray-core/tags
 # https://hub.docker.com/r/teddysun/xray/tags
 
 xray_docker_config:
   name: xray
   image: teddysun/xray
-  tag: 24.11.30
+  tag: 26.7.28
   path: '{{ docker_path }}/xray'
-  restart_policy: always
+  restart_policy: '{{ docker_restart_policy }}'
+  # deliberately not '{{ docker_network_mode }}': a REALITY server behind a
+  # docker bridge sees the gateway address as the client source, so host mode is
+  # the working default. Override only if you know you want the NAT.
   network_mode: host
-  timezone: Europe/Moscow
+  timezone: '{{ docker_timezone }}'
 
-xray_service_config:
+xray_server_config:
   name: '{{ inventory_hostname }}'
   tag: proxy
   listening_address: 0.0.0.0
-  listening_port: 8443
+  listening_port: 443
   public_address: '{{ ansible_host }}'
-  vless_address: youtube.com
-  private_key: ''
-  public_key: ''
-  block:
-    domain: []
-    ip: []
-    port: []
-    protocol: []
-  direct:
-    domain: []
-    ip: []
-    port: []
-    protocol: []
-  proxy:
-    domain: []
-      # - ext:geosite_v2fly.dat:category-anticensorship
-      # - ext:geosite_v2fly.dat:category-dev
-      # - ext:geosite_v2fly.dat:google
-      # - ext:geosite_v2fly.dat:netflix
-      # - ext:geosite_v2fly.dat:youtube
-      # - ext:zkeen.dat:domains
-      # - ext:zkeen.dat:youtube
-    ip: []
-    port: []
-    protocol: []
+  vless_address: vk.com
+  target_port: 443
+  dns_port: 53
+  flow: xtls-rprx-vision
+  stream_settings:
+    network: tcp
+    security: reality
+  # Reuse a previously generated REALITY key pair instead of generating a new
+  # one. When both values are set, the `xray x25519` generation is skipped.
+  # private_key: ''
+  # public_key: ''
+  dns:
+    servers: []
+      # - 1.1.1.1
+      # - https://dns.google/dns-query
+      # - address: 8.8.8.8
+      #   domains:
+      #     - geosite:google
+      #   expectIPs:
+      #     - geoip:google
+    # queryStrategy: UseIP
+  outbounds: []
+    # - protocol: freedom
+    #   tag: out-direct
+  routing:
+    rules: []
+      # - type: field
+      #   domain:
+      #     - geosite:category-ads-all
+      #   outboundTag: block
+      # - type: field
+      #   ip:
+      #     - geoip:private
+      #   outboundTag: direct
+  log:
+    loglevel: warning
 
 xray_clients_config:
-  path: '{{ role_path }}/files/clients' # save configuration files here
-  clients: []
-    # - name: router
-    #   protocol: dokodemo-door
-    # - name: smaptphone
-    #   protocol: socks
+  path: '{{ inventory_dir }}/files/clients'
+  clients:
+    - android
+    - iphone
+    - macbook
+    # A client may also be defined as a mapping to reuse previously generated
+    # secrets. When both `id` and `shortId` are set, the `xray uuid` and
+    # `openssl rand` generation is skipped for that client.
+    # - email: keenetic
+    #   id: 11111111-2222-3333-4444-555555555555
+    #   shortId: 0123456789abcdef
+  dns:
+    servers: []
+      # - 1.1.1.1
+      # - https://dns.adguard-dns.com/dns-query
+      # - address: 8.8.8.8
+      #   domains:
+      #     - geosite:geolocation-!cn
+      #   expectIPs:
+      #     - geoip:!ru
+    # queryStrategy: UseIP
+  inbounds: []
+    # - protocol: socks
+    #   tag: socks-in
+    #   listen: 127.0.0.1
+    #   port: 1080
+    #   settings:
+    #     udp: true
+    # - protocol: http
+    #   tag: http-in
+    #   listen: 127.0.0.1
+    #   port: 8080
+  outbounds: []
+    # - protocol: vless
+    #   tag: proxy
+    #   settings:
+    #     vnext:
+    #       - address: '{{ ansible_host }}'
+    #         port: 443
+    #         users:
+    #           - id: '{{ item.id | default("") }}'
+    #             flow: xtls-rprx-vision
+    #             encryption: none
+    #   streamSettings:
+    #     network: tcp
+    #     security: reality
+    #     realitySettings:
+    #       serverName: vk.com
+    #       fingerprint: chrome
+    #       publicKey: '{{ xray_server_config.public_key | default("") }}'
+    #       shortId: '{{ item.shortId | default("") }}'
+    # - protocol: freedom
+    #   tag: direct
+    # - protocol: blackhole
+    #   tag: block
+  routing:
+    rules: []
+      # - type: field
+      #   domain:
+      #     - geosite:category-ads-all
+      #   outboundTag: block
+      # - type: field
+      #   ip:
+      #     - geoip:private
+      #   outboundTag: direct
+  log:
+    loglevel: warning
 
-xray_geofiles: []
-  # - name: geodata_antizapret
-  #   repo: warexify/antizapret-xray
-  #   file: antizapret.dat
-  # - name: geodata_v2fly
-  #   repo: v2fly/domain-list-community
-  #   file: dlc.dat
-  # - name: geoip_v2fly
-  #   repo: loyalsoldier/v2ray-rules-dat
-  #   file: geoip.dat
-  # - name: geosite_antizapret
-  #   repo: warexify/antizapret-xray
-  #   file: antizapret.dat
-  # - name: geosite_v2fly
-  #   repo: v2fly/domain-list-community
-  #   file: dlc.dat
-  # - name: zkeen
-  #   repo: jameszeroX/zkeen-domains
-  #   file: zkeen.dat
-  # - name: zkeenip
-  #   repo: jameszeroX/zkeen-ip
-  #   file: zkeenip.dat
-xray_geofiles_path:
-  src: '{{ role_path }}/files/geosites'
-  dst: '{{ xray_docker_config.path }}/data'
+# Per-client `inbounds` override, keyed by client email. A client listed here
+# gets these inbounds in its profile instead of xray_clients_config.inbounds.
+xray_client_inbounds: {}
+  # macbook:
+  #   - protocol: socks
+  #     tag: socks-in
+  #     listen: 127.0.0.1
+  #     port: 1080
+  #     settings:
+  #       udp: true
 
 xray_tuning_config:
-  enabled: true
+  enabled: false
   fs.file-max: 51200
   net.core.default_qdisc: fq
   net.ipv4.tcp_congestion_control: bbr

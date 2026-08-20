@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 global:
@@ -6,8 +7,19 @@ global:
 route:
   {{ alertmanager_route_config | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
 
+{# alertmanager expects telegram chat_id as int64, but a vault-sourced value
+   stays unsafe text and to_nice_yaml would quote it, so coerce it here #}
+{% set receivers = [] %}
+{% for receiver in alertmanager_receivers_config %}
+{%   set telegram_configs = [] %}
+{%   for config in receiver.telegram_configs | default([], true) %}
+{%     set _ = telegram_configs.append(config | combine({'chat_id': config.chat_id | int})) %}
+{%   endfor %}
+{%   set _ = receivers.append(receiver | combine({'telegram_configs': telegram_configs})
+             if telegram_configs else receiver) %}
+{% endfor %}
 receivers:
-  {{ alertmanager_receivers_config | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
+  {{ receivers | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}
 
 templates:
   - /etc/alertmanager/templates/*.tmpl

@@ -6,18 +6,19 @@
   block:
 
     - name: detect | xray container
+      become: true
       community.docker.docker_container_info:
         name: '{{ xray_docker_config.name }}'
       register: xray_container
 
-    - name: detect | xray container exists fact
+    - name: detect | set xray_container_exists fact
       ansible.builtin.set_fact:
         xray_container_exists: >-
           {{ true if
           xray_container.exists
           else false }}
 
-    - name: detect | xray container update fact
+    - name: detect | set xray_container_update fact
       ansible.builtin.set_fact:
         xray_container_update: >-
           {{ true if
@@ -34,37 +35,90 @@
     - name: detect | check database file
       ansible.builtin.stat:
         path: '{{ xray_docker_config.path }}/config.json'
-      register: database_file
+      register: xray_database_file
 
     - name: detect | read database file
       become: true
       ansible.builtin.slurp:
         src: '{{ xray_docker_config.path }}/config.json'
-      register: slurp_database_file
+      register: xray_slurp_database_file
       when:
-        - database_file.stat.exists
+        - xray_database_file.stat.exists
 
-    - name: detect | register database file content
+    # The public_key file is still written by config.yml for operators and
+    # external tooling, but it is no longer read back: the public key is
+    # derived from the private key below.
+    - name: detect | set xray_database_file_content fact
       ansible.builtin.set_fact:
-        database_file_content: >-
-          {{ slurp_database_file.content | b64decode |
+        xray_database_file_content: >-
+          {{ xray_slurp_database_file.content | b64decode |
           from_json | json_query("inbounds")
-          if database_file.stat.exists
+          if xray_database_file.stat.exists
           else '' }}
+
+    # Locate the inbound this role owns by its tag. Searching the deployed
+    # streamSettings for the configured vless_address instead would stop
+    # matching the moment that address changes, and an empty match is silent:
+    # the keypair and every client UUID/shortId would be reissued on the next
+    # run, invalidating all distributed profiles.
+    - name: detect | set xray_deployed_inbounds fact
+      ansible.builtin.set_fact:
+        xray_deployed_inbounds: >-
+          {{ xray_database_file_content | default([], true) | list }}
+
+    - name: detect | set xray_deployed_inbound fact
+      ansible.builtin.set_fact:
+        xray_deployed_inbound: >-
+          {{ (xray_deployed_inbounds | selectattr('tag', 'defined') |
+          selectattr('tag', 'eq', xray_server_config.tag) | list | first)
+          if (xray_deployed_inbounds | selectattr('tag', 'defined') |
+          selectattr('tag', 'eq', xray_server_config.tag) | list | length > 0)
+          else ((xray_deployed_inbounds | first)
+          if xray_deployed_inbounds | length == 1
+          else {}) }}
+
+    - name: detect | set xray_deployed_reality fact
+      ansible.builtin.set_fact:
+        xray_deployed_reality: >-
+          {{ (xray_deployed_inbound.streamSettings | default({})).realitySettings
+          | default({}) }}
 
     - name: detect | set xray_private_key fact
       ansible.builtin.set_fact:
         xray_private_key: >-
-          {{ database_file_content |
-          selectattr('streamSettings', 'search', xray_service_config.vless_address) |
-          map(attribute='streamSettings.realitySettings.privateKey') | join('') }}
+          {{ xray_server_config.private_key
+          if xray_server_config.private_key | default('') | length > 0
+          else xray_deployed_reality.privateKey | default('') }}
+
+    # Derive the public key from the private key rather than reading back the
+    # public_key file. The file is a second source of truth for one keypair:
+    # if it and the privateKey in config.json ever disagree, the role hands
+    # clients a public key the server will not answer to. Deriving makes that
+    # unrepresentable. Skipped when no private key is known yet, so a fresh
+    # host still falls through to generation in server.yml.
+    - name: detect | derive public key from private key
+      become: true
+      community.docker.docker_container:
+        name: '{{ xray_docker_config.name }}-runtime'
+        image: '{{ xray_docker_config.image }}:{{ xray_docker_config.tag }}'
+        cleanup: true
+        command: xray x25519 -i {{ xray_private_key }}
+        detach: false
+      register: xray_derived_public_key
+      changed_when: false
+      no_log: true
+      when:
+        - xray_server_config.public_key | default('') | length == 0
+        - xray_private_key | default('') | length > 0
 
     - name: detect | set xray_public_key fact
       ansible.builtin.set_fact:
         xray_public_key: >-
-          {{ database_file_content |
-          selectattr('streamSettings', 'search', xray_service_config.vless_address) |
-          map(attribute='streamSettings.realitySettings.publicKey') | join('') }}
+          {{ xray_server_config.public_key
+          if xray_server_config.public_key | default('') | length > 0
+          else (xray_derived_public_key.container.Output | default('') |
+          regex_search('(?<=Password \(PublicKey\): )(.*?)(?=\n)') |
+          default('', true)) }}
 
     - name: detect | set xray_server_keys_exists fact
       ansible.builtin.set_fact:
@@ -75,39 +129,65 @@
           xray_public_key | default('') | length > 0
           else false }}
 
+    - name: detect | normalize configured clients
+      ansible.builtin.set_fact:
+        xray_configured_clients: >-
+          {{ xray_configured_clients | default([]) +
+          [item if item is mapping else {'email': item}] }}
+      loop: '{{ xray_clients_config.clients | default([]) }}'
+      loop_control:
+        label: '{{ item.email | default(item) }}'
+
     - name: detect | get xray database facts
       when:
-        - database_file_content | length > 0
+        - xray_database_file_content | length > 0
       block:
 
+        # A missed readback is unrecoverable without redistributing every
+        # client profile, so refuse to continue rather than silently reissue.
+        - name: detect | assert the deployed inbound was located
+          ansible.builtin.assert:
+            that:
+              - xray_deployed_inbound | length > 0
+            fail_msg: >-
+              Could not locate the inbound tagged '{{ xray_server_config.tag }}'
+              among the {{ xray_deployed_inbounds | length }} inbound(s) in
+              {{ xray_docker_config.path }}/config.json. Refusing to continue:
+              this would reissue the REALITY keypair and every client
+              UUID/shortId, invalidating all distributed profiles. Either
+              restore the tag, pin the existing secrets in host_vars, or set
+              xray_force_update_secrets=true to reissue deliberately.
+            quiet: true
+          when:
+            - not xray_force_update_secrets
+
+        # Clients and shortIds are rendered from the same ordered list in
+        # server.j2, so index i of one pairs with index i of the other.
         - name: detect | set xray_active_clients fact
           ansible.builtin.set_fact:
             xray_active_clients: >-
               {{ xray_active_clients | default([]) +
-              [item | combine({'short_id': (database_file_content |
-              map(attribute='streamSettings.realitySettings.shortIds') | flatten)[xray_client]},
-              {'protocol': (xray_clients_config.clients | selectattr('name', 'equalto', item.name) |
-              map(attribute='protocol') | join(''))})] }}
+              [item | combine({'shortId':
+              (xray_deployed_reality.shortIds | default([]))[xray_client]
+              | default('')})] }}
           loop: >-
-            {{ database_file_content |
-            selectattr('streamSettings', 'search', xray_service_config.vless_address) |
-            map(attribute='settings.clients') | flatten }}
+            {{ (xray_deployed_inbound.settings | default({})).clients | default([]) }}
           loop_control:
-            label: '{{ item.name }}'
+            label: '{{ item.email }}'
             index_var: xray_client
 
-        - name: detect | set xray_new_clients fact
+        - name: detect | set xray_inactive_clients fact
           ansible.builtin.set_fact:
             xray_inactive_clients: >-
               {{ xray_active_clients | default([]) |
-              rejectattr('name', 'in', xray_clients_config.clients | map(attribute='name')) }}
+              rejectattr('email', 'in',
+              xray_configured_clients | default([]) | map(attribute='email') | list) | list }}
 
     - name: detect | set xray_new_clients fact
       ansible.builtin.set_fact:
         xray_new_clients: >-
-          {{ xray_clients_config.clients
-          if
-          xray_force_update_secrets
-          else
-          xray_clients_config.clients |
-          rejectattr('name', 'in', xray_active_clients | default([]) | map(attribute='name')) }}
+          {{ xray_configured_clients | default([])
+          if xray_force_update_secrets
+          else (xray_configured_clients | default([]) |
+          rejectattr('email', 'in',
+          xray_active_clients | default([]) | map(attribute='email') | list) | list) }}

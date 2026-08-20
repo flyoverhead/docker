@@ -1,32 +1,45 @@
 ---
 
+# Every service group is a child of `docker`, so a single Vagrant box runs the
+# whole stack. Ports have to stay distinct across groups: dnscrypt takes 5353
+# and pihole 53, singbox 8443 and xray 443.
+
 docker:
   hosts:
     host-01:
+
 alertmanager:
   children:
     docker:
+
 dnscrypt:
   children:
     docker:
+
 grafana:
   children:
     docker:
+
 node_exporter:
   children:
     docker:
+
 pihole:
   children:
     docker:
+
 prometheus:
   children:
     docker:
+
 singbox:
   children:
     docker:
+
 torrserver:
   children:
     docker:
+
 xray:
   children:
     docker:

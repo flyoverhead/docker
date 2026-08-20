@@ -1,5 +1,14 @@
 ---
 
+- name: sing-box | kill container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ singbox_docker_config.path }}'
+    remove_images: local
+    state: absent
+    wait: true
+    wait_timeout: 60
+
 - name: sing-box | start container
   become: true
   community.docker.docker_compose_v2:
@@ -8,17 +17,14 @@
     wait: true
     wait_timeout: 60
 
+# `recreate: always` rather than `state: restarted`: the latter maps to
+# `docker compose restart`, which leaves the old container -- and therefore the
+# old image -- in place.
 - name: sing-box | restart container
   become: true
   community.docker.docker_compose_v2:
     project_src: '{{ singbox_docker_config.path }}'
-    state: restarted
-    wait: true
-    wait_timeout: 60
-
-- name: sing-box | kill container
-  community.docker.docker_compose_v2:
-    project_src: '{{ singbox_docker_config.path }}'
-    state: absent
+    state: present
+    recreate: always
     wait: true
     wait_timeout: 60

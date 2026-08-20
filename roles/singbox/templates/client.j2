@@ -1,3 +1,8 @@
+{#
+  `log` is rendered last and unconditionally: every other section is optional
+  and emits a trailing comma, so an optional section in last position produces
+  invalid JSON the moment it is left empty.
+#}
 {
 {% if (singbox_clients_config.dns | default({})).items() | length > 0 %}
   "dns": {
@@ -8,9 +13,11 @@
 {% endfor %}
   },
 {% endif %}
-{% if singbox_clients_config.inbounds | default([]) | length > 0 %}
+{% set client_inbounds = (singbox_client_inbounds | default({}))[item.name | default('')]
+   | default(singbox_clients_config.inbounds | default([])) %}
+{% if client_inbounds | length > 0 %}
   "inbounds": [
-{% for inbound in singbox_clients_config.inbounds %}
+{% for inbound in client_inbounds %}
     {
 {% for key, value in inbound.items() %}
       {{ key | to_nice_json(sort_keys=false) |
@@ -30,7 +37,7 @@
   ],
 {% endif %}
   "outbounds": [
-{% for outbound in singbox_clients_config.outbounds %}
+{% for outbound in singbox_clients_config.outbounds | default([]) %}
     {
 {% for key, value in outbound.items() %}
       {{ key | to_nice_json(sort_keys=false) |
@@ -49,18 +56,20 @@
 {% endfor %}
   },
 {% endif %}
-{% if (singbox_clients_config.log | default({})).items() | length > 0 %}
-  "log": {
-{% for key, value in singbox_clients_config.log.items() %}
+{% if (singbox_clients_config.experimental | default({})).items() | length > 0 %}
+  "experimental": {
+{% for key, value in singbox_clients_config.experimental.items() %}
     {{ key | to_nice_json(sort_keys=false) |
     trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
     trim | indent(4) }}{{ ',' if not loop.last }}
 {% endfor %}
   },
 {% endif %}
-  "experimental": {
-    "cache_file": {
-      "enabled": true
-    }
+  "log": {
+{% for key, value in (singbox_clients_config.log | default({})).items() %}
+    {{ key | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}{{ ',' if not loop.last }}
+{% endfor %}
   }
 }

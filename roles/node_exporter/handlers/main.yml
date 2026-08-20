@@ -1,16 +1,21 @@
 ---
 
 - name: node-exporter | start container
+  become: true
   community.docker.docker_compose_v2:
     project_src: '{{ node_exporter_docker_config.path }}'
     state: present
     wait: true
     wait_timeout: 60
 
-- name: node-exporter | restart container
+# An image or compose change needs `docker compose up` -- `restart` would keep
+# running the old image forever. `pull: always` makes a moving tag resolve too.
+- name: node-exporter | recreate container
   become: true
   community.docker.docker_compose_v2:
     project_src: '{{ node_exporter_docker_config.path }}'
-    state: restarted
+    state: present
+    pull: always
+    recreate: always
     wait: true
     wait_timeout: 60

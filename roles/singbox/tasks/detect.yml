@@ -6,23 +6,24 @@
   block:
 
     - name: detect | sing-box container
+      become: true
       community.docker.docker_container_info:
         name: '{{ singbox_docker_config.name }}'
-      register: sing_box_container
+      register: singbox_container
 
-    - name: detect | set sing_box_container_exists fact
+    - name: detect | set singbox_container_exists fact
       ansible.builtin.set_fact:
-        sing_box_container_exists: >-
+        singbox_container_exists: >-
           {{ true if
-          sing_box_container.exists
+          singbox_container.exists
           else false }}
 
-    - name: detect | set sing_box_container_update fact
+    - name: detect | set singbox_container_update fact
       ansible.builtin.set_fact:
-        sing_box_container_update: >-
+        singbox_container_update: >-
           {{ true if
-          sing_box_container.exists and
-          singbox_docker_config.tag not in sing_box_container.container.Config.Image
+          singbox_container.exists and
+          singbox_docker_config.tag not in singbox_container.container.Config.Image
           else false }}
 
 - name: detect | database
@@ -34,94 +35,172 @@
     - name: detect | check database file
       ansible.builtin.stat:
         path: '{{ singbox_docker_config.path }}/config.json'
-      register: database_file
+      register: singbox_database_file
 
     - name: detect | check public key file
       ansible.builtin.stat:
         path: '{{ singbox_docker_config.path }}/public_key'
-      register: public_key_file
+      register: singbox_public_key_file
 
     - name: detect | read database file
       become: true
       ansible.builtin.slurp:
         src: '{{ singbox_docker_config.path }}/config.json'
-      register: slurp_database_file
+      register: singbox_slurp_database_file
       when:
-        - database_file.stat.exists
+        - singbox_database_file.stat.exists
 
     - name: detect | read public key file
       become: true
       ansible.builtin.slurp:
         src: '{{ singbox_docker_config.path }}/public_key'
-      register: slurp_public_key_file
+      register: singbox_slurp_public_key_file
       when:
-        - public_key_file.stat.exists
+        - singbox_public_key_file.stat.exists
 
-    - name: detect | set database_file_content fact
+    - name: detect | set singbox_database_file_content fact
       ansible.builtin.set_fact:
-        database_file_content: >-
-          {{ slurp_database_file.content | b64decode |
+        singbox_database_file_content: >-
+          {{ singbox_slurp_database_file.content | b64decode |
           from_json | json_query("inbounds")
-          if database_file.stat.exists
-          else '' }}
-        public_key_file_content: >-
-          {{ slurp_public_key_file.content | b64decode
-          if public_key_file.stat.exists
-          else '' }}
+          if singbox_database_file.stat.exists
+          else [] }}
 
-    - name: detect | set sing_box_private_key fact
+    - name: detect | set singbox_deployed_inbounds fact
       ansible.builtin.set_fact:
-        sing_box_private_key: >-
-          {{ database_file_content |
-          selectattr('tls', 'search', singbox_server_config.vless_address) |
-          map(attribute='tls.reality.private_key') | join('') }}
+        singbox_deployed_inbounds: >-
+          {{ singbox_database_file_content | default([], true) | list }}
 
-    - name: detect | set sing_box_public_key fact
+    # Locate the inbound this role owns by its tag. Searching the deployed
+    # `tls` block for the configured vless_address instead -- which is what this
+    # role used to do -- stops matching the moment that address changes, and an
+    # empty match is silent: the keypair and every client UUID/short_id would be
+    # reissued on the next run, invalidating all distributed profiles.
+    #
+    # The single-inbound fallback exists for hosts deployed before the inbound
+    # carried a tag at all.
+    - name: detect | set singbox_deployed_inbound fact
       ansible.builtin.set_fact:
-        sing_box_public_key: >-
-          {{ public_key_file_content }}
+        singbox_deployed_inbound: >-
+          {{ (singbox_deployed_inbounds | selectattr('tag', 'defined') |
+          selectattr('tag', 'eq', singbox_server_config.tag) | list | first)
+          if (singbox_deployed_inbounds | selectattr('tag', 'defined') |
+          selectattr('tag', 'eq', singbox_server_config.tag) | list | length > 0)
+          else ((singbox_deployed_inbounds | first)
+          if singbox_deployed_inbounds | length == 1
+          else {}) }}
 
-    - name: detect | set sing_box_server_keys_exists fact
+    - name: detect | set singbox_deployed_reality fact
       ansible.builtin.set_fact:
-        sing_box_server_keys_exists: >-
+        singbox_deployed_reality: >-
+          {{ (singbox_deployed_inbound.tls | default({})).reality
+          | default({}) }}
+
+    - name: detect | set singbox_private_key fact
+      ansible.builtin.set_fact:
+        singbox_private_key: >-
+          {{ singbox_server_config.private_key
+          if singbox_server_config.private_key | default('') | length > 0
+          else singbox_deployed_reality.private_key | default('') }}
+
+    # Unlike `xray x25519 -i`, sing-box has no subcommand that derives a public
+    # key from a private one, so the public half genuinely has to be stored. The
+    # assert further down catches the one way that can go wrong -- a config.json
+    # whose private key has no matching public_key file -- instead of silently
+    # handing clients a key the server will not answer to.
+    - name: detect | set singbox_public_key fact
+      ansible.builtin.set_fact:
+        singbox_public_key: >-
+          {{ singbox_server_config.public_key
+          if singbox_server_config.public_key | default('') | length > 0
+          else (singbox_slurp_public_key_file.content | default('') | b64decode | trim
+          if singbox_public_key_file.stat.exists
+          else '') }}
+
+    - name: detect | set singbox_server_keys_exists fact
+      ansible.builtin.set_fact:
+        singbox_server_keys_exists: >-
           {{ true if
-          sing_box_private_key | default('') | length > 0
+          singbox_private_key | default('') | length > 0
           and
-          sing_box_public_key | default('') | length > 0
+          singbox_public_key | default('') | length > 0
           else false }}
+
+    - name: detect | normalize configured clients
+      ansible.builtin.set_fact:
+        singbox_configured_clients: >-
+          {{ singbox_configured_clients | default([]) +
+          [item if item is mapping else {'name': item}] }}
+      loop: '{{ singbox_clients_config.clients | default([]) }}'
+      loop_control:
+        label: '{{ item.name | default(item) }}'
 
     - name: detect | get sing-box database facts
       when:
-        - database_file_content | length > 0
+        - singbox_deployed_inbounds | length > 0
       block:
 
-        - name: detect | set sing_box_active_clients fact
+        # A missed readback is unrecoverable without redistributing every
+        # client profile, so refuse to continue rather than silently reissue.
+        - name: detect | assert the deployed inbound was located
+          ansible.builtin.assert:
+            that:
+              - singbox_deployed_inbound | length > 0
+            fail_msg: >-
+              Could not locate the inbound tagged '{{ singbox_server_config.tag }}'
+              among the {{ singbox_deployed_inbounds | length }} inbound(s) in
+              {{ singbox_docker_config.path }}/config.json. Refusing to continue:
+              this would reissue the REALITY keypair and every client
+              UUID/short_id, invalidating all distributed profiles. Either
+              restore the tag, pin the existing secrets in host_vars, or set
+              singbox_force_update_secrets=true to reissue deliberately.
+            quiet: true
+          when:
+            - not singbox_force_update_secrets
+
+        - name: detect | assert the reality public key is recoverable
+          ansible.builtin.assert:
+            that:
+              - singbox_public_key | default('') | length > 0
+            fail_msg: >-
+              {{ singbox_docker_config.path }}/config.json holds a REALITY
+              private key but {{ singbox_docker_config.path }}/public_key is
+              missing, and sing-box cannot derive one from the other. Refusing
+              to continue: clients would be handed an empty public key. Restore
+              the file, pin singbox_server_config.public_key in host_vars, or
+              set singbox_force_update_secrets=true to reissue the keypair.
+            quiet: true
+          when:
+            - not singbox_force_update_secrets
+            - singbox_private_key | default('') | length > 0
+
+        # Clients and short_ids are rendered from the same ordered list in
+        # server.j2, so index i of one pairs with index i of the other.
+        - name: detect | set singbox_active_clients fact
           ansible.builtin.set_fact:
-            sing_box_active_clients: >-
-              {{ sing_box_active_clients | default([]) +
-              [item | combine({'short_id': (database_file_content |
-              map(attribute='tls.reality.short_id') | flatten)[sing_box_client]})] }}
+            singbox_active_clients: >-
+              {{ singbox_active_clients | default([]) +
+              [item | combine({'short_id':
+              (singbox_deployed_reality.short_id | default([]))[singbox_client]
+              | default('')})] }}
           loop: >-
-            {{ database_file_content |
-            selectattr('tls', 'search', singbox_server_config.vless_address) |
-            map(attribute='users') | flatten }}
+            {{ (singbox_deployed_inbound.users | default([])) }}
           loop_control:
             label: '{{ item.name }}'
-            index_var: sing_box_client
+            index_var: singbox_client
 
-        - name: detect | set sing_box_new_clients fact
+        - name: detect | set singbox_inactive_clients fact
           ansible.builtin.set_fact:
-            sing_box_inactive_clients: >-
-              {{ sing_box_active_clients | default([]) |
-              rejectattr('name', 'in', singbox_clients_config.clients) }}
+            singbox_inactive_clients: >-
+              {{ singbox_active_clients | default([]) |
+              rejectattr('name', 'in',
+              singbox_configured_clients | default([]) | map(attribute='name') | list) | list }}
 
-    - name: detect | set sing_box_new_clients fact
+    - name: detect | set singbox_new_clients fact
       ansible.builtin.set_fact:
-        sing_box_new_clients: >-
-          {{ singbox_clients_config.clients
-          if
-          singbox_force_update_secrets
-          else
-          singbox_clients_config.clients |
-          difference(sing_box_active_clients |
-          default([]) | map(attribute='name')) }}
+        singbox_new_clients: >-
+          {{ singbox_configured_clients | default([])
+          if singbox_force_update_secrets
+          else (singbox_configured_clients | default([]) |
+          rejectattr('name', 'in',
+          singbox_active_clients | default([]) | map(attribute='name') | list) | list) }}

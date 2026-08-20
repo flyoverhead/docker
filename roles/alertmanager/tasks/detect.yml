@@ -1,15 +1,16 @@
 ---
 
 - name: detect | alertmanager container
+  become: true
   community.docker.docker_container_info:
     name: '{{ alertmanager_docker_config.name }}'
   register: alertmanager_container
 
-- name: detect | alertmanager container exists fact
+- name: detect | set alertmanager_container_exists fact
   ansible.builtin.set_fact:
     alertmanager_container_exists: '{{ true if alertmanager_container.exists else false }}'
 
-- name: detect | alertmanager container update fact
+- name: detect | set alertmanager_container_update fact
   ansible.builtin.set_fact:
     alertmanager_container_update: >-
       {{ true if

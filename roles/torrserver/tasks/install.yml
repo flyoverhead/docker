@@ -1,17 +1,25 @@
 ---
 
-- name: install | torrserver service folder
+- name: install | torrserver service folders
   become: true
   ansible.builtin.file:
-    path: '{{ torrserver_docker_config.path }}'
+    path: '{{ item }}'
     state: directory
+    owner: root
+    group: root
     mode: '0755'
+  loop:
+    - '{{ torrserver_docker_config.path }}'
+    - '{{ torrserver_docker_config.path }}/{{ torrserver_service_config.data_dir }}'
+    - '{{ torrserver_docker_config.path }}/{{ torrserver_service_config.torrents_dir }}'
 
 - name: install | torrserver docker-compose file
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: '{{ torrserver_docker_config.path }}/docker-compose.yml'
+    owner: root
+    group: root
     mode: '0644'
     lstrip_blocks: true
   notify:

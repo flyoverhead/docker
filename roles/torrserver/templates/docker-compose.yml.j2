@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 services:
@@ -7,8 +8,17 @@ services:
     restart: {{ torrserver_docker_config.restart_policy }}
     environment:
       - TS_PORT={{ torrserver_service_config.listening_port }}
+      - TS_CONF_PATH=/opt/ts/config
+      - TS_TORR_DIR=/opt/ts/torrents
       - TZ={{ torrserver_docker_config.timezone }}
     volumes:
-      - {{ torrserver_docker_config.path }}/db:/TS/db
+      - {{ torrserver_docker_config.path }}/{{ torrserver_service_config.data_dir }}:/opt/ts/config
+      - {{ torrserver_docker_config.path }}/{{ torrserver_service_config.torrents_dir }}:/opt/ts/torrents
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+{% if torrserver_docker_config.network_mode == 'bridge' %}
+    ports:
+      - "{{ torrserver_service_config.listening_port }}:{{ torrserver_service_config.listening_port }}"
+{% endif %}
     network_mode: {{ torrserver_docker_config.network_mode }}
     shm_size: 256m

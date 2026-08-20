@@ -27,9 +27,24 @@
   tags:
     - xray.docker
 
+# `apply` is required, not optional. Tags on a dynamic include_tasks decide
+# only whether the include itself expands; they are not pushed onto the
+# included tasks. config.yml's tasks carry no tags of their own, so without
+# `apply` every tagged run expanded this include and then filtered out all
+# eight tasks -- reporting ok=1 changed=0 while rendering nothing at all.
+# `install` above already does this correctly; `config` did not.
+#
+# Note this include is reached by xray.docker/xray.tuning but the client and
+# key facts it consumes are set by detect.yml's `detect | database` block,
+# which is tagged xray.clients/xray.server. So a tagged client render needs
+# BOTH, e.g. --tags xray.clients,xray.tuning.
 - name: config
   ansible.builtin.include_tasks:
     file: config.yml
+    apply:
+      tags:
+        - xray.docker
+        - xray.tuning
   tags:
     - xray.docker
     - xray.tuning

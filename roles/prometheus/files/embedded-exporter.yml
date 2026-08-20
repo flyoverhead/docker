@@ -134,7 +134,7 @@ groups:
           description: |
             Prometheus encountered {{ $value }} rule evaluation failures, leading to potentially ignored alerts.
             VALUE = {{ $value }}
-            LABELS = {{ $labels }}"
+            LABELS = {{ $labels }}
 
       - alert: Prometheus Template Text Expansion Failures
         expr: increase(prometheus_template_text_expansion_failures_total[3m]) > 0
@@ -199,7 +199,7 @@ groups:
 
       - alert: Prometheus Target Scraping Slow
         expr: >
-          rometheus_target_interval_length_seconds{quantile="0.9"} / on (interval, instance, job)
+          prometheus_target_interval_length_seconds{quantile="0.9"} / on (interval, instance, job)
           prometheus_target_interval_length_seconds{quantile="0.5"} > 1.05
         for: 5m
         labels:

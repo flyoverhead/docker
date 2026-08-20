@@ -1,19 +1,23 @@
 ---
 
+# `-runtime` matters: naming this container after the service would collide with
+# the running sing-box container and take the service down to run a one-shot
+# `generate` command.
 - name: config | generate server keys
   become: true
   community.docker.docker_container:
-    name: '{{ singbox_docker_config.name }}'
+    name: '{{ singbox_docker_config.name }}-runtime'
     image: '{{ singbox_docker_config.image }}:{{ singbox_docker_config.tag }}'
     cleanup: true
     command: generate reality-keypair
     detach: false
-  register: sing_box_keys
+  register: singbox_keys
+  changed_when: true
 
 - name: config | set server keys fact
   ansible.builtin.set_fact:
-    sing_box_private_key: >-
-      {{ sing_box_keys.container.Output | regex_search('(?<=PrivateKey: )(.*?)(?=\n)') }}
-    sing_box_public_key: >-
-      {{ sing_box_keys.container.Output | regex_search('(?<=PublicKey: )(.*?)(?=\n)') }}
+    singbox_private_key: >-
+      {{ singbox_keys.container.Output | regex_search('(?<=PrivateKey: )(.*?)(?=\n)') }}
+    singbox_public_key: >-
+      {{ singbox_keys.container.Output | regex_search('(?<=PublicKey: )(.*?)(?=\n)') }}
   no_log: true

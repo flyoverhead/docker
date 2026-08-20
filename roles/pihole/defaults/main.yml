@@ -2,22 +2,29 @@
 
 # https://pi-hole.net/
 # https://hub.docker.com/r/pihole/pihole/tags
+# https://docs.pi-hole.net/docker/configuration/
+#
+# Pi-hole v6 replaced every v5 environment variable with the `FTLCONF_<section>_
+# <setting>` scheme that mirrors pihole.toml. Anything set through the
+# environment becomes read-only in the web UI and CLI, which is what makes this
+# role the single source of truth.
 
 pihole_docker_config:
   name: pihole
   image: pihole/pihole
-  tag: 2024.07.0
+  tag: 2026.07.2
   path: '{{ docker_path }}/pihole'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'
   timezone: '{{ docker_timezone }}'
 
 pihole_service_config:
-  dnsmasq_listening_address: all
+  # LOCAL | SINGLE | BIND | ALL | NONE -- ALL is required behind docker bridge
+  dns_listening_mode: ALL
   upstream_dns:
     - '{{ ansible_host }}#5353'
+  # override this -- the default is a placeholder, not a usable secret
   web_password: pihole
-  web_address: '{{ ansible_host }}'
   web_port: 8080
   dnssec: true
   query_logging: true
@@ -25,7 +32,13 @@ pihole_service_config:
   dns_fqdn_required: true
   web_theme: default-dark
   ipv6_support: false
+  # keep /etc/dnsmasq.d mounted: required for the first v6 container start when
+  # upgrading from v5 so custom dnsmasq snippets are migrated into pihole.toml.
+  # Safe to turn off once the migration has run.
+  etc_dnsmasq_d: false
 
+# expected row counts, compared against gravity.db in config.yml.
+# adlist gets +1 for the StevenBlack list pi-hole seeds a fresh gravity.db with.
 pihole_lists:
   adlist: "{{ lookup('file', 'adlist.list') | split | length + 1 }}"
   domain_blacklist: "{{ lookup('file', 'domain_black.list') | split | length }}"

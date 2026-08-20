@@ -1,6 +1,8 @@
 ---
 
 - name: config | server tuning
+  when:
+    - xray_tuning_config.enabled
   block:
 
     - name: config | kernel parameters
@@ -13,9 +15,7 @@
       loop_control:
         label: '{{ item.key }} is set to {{ item.value }}'
       when:
-        - xray_tuning_config.enabled
-        - item.key != 'enabled'
-        - item.key != 'system_limits'
+        - item.key not in ['enabled', 'system_limits']
 
     - name: config | nofile limits
       become: true
@@ -29,16 +29,6 @@
         subelements('types', skip_missing=true) }}
       loop_control:
         label: '{{ item.0.domain }} {{ item.1.type }} {{ item.0.limit }} {{ item.1.value }}'
-      when:
-        - xray_tuning_config.enabled
-
-- name: config | block regex list
-  ansible.builtin.set_fact:
-    block_domain_regex: >-
-      {{ ['regex:'] |
-      product(lookup('file', 'block_regex.list').splitlines()) |
-      map('join') |
-      list }}
 
 - name: config | server secrets
   block:
@@ -47,13 +37,14 @@
       ansible.builtin.include_tasks:
         file: server.yml
       when: >-
-        not xray_server_keys_exists
-        or xray_force_update_secrets
+        not (xray_server_config.private_key | default('') | length > 0
+        and xray_server_config.public_key | default('') | length > 0)
+        and (not xray_server_keys_exists or xray_force_update_secrets)
 
     - name: config | add server keys to config
       ansible.builtin.set_fact:
-        xray_service_config: >-
-          {{ xray_service_config |
+        xray_server_config: >-
+          {{ xray_server_config |
           combine({'private_key': xray_private_key},
           {'public_key': xray_public_key}) }}
 
@@ -66,38 +57,82 @@
       loop: '{{ xray_new_clients | default([]) }}'
       loop_control:
         index_var: xray_client
+        label: '{{ item.email | default(item) }}'
 
+    # Parenthesised deliberately: Jinja binds a filter tighter than '+', so
+    # `a + b | sort` sorts only b and leaves the concatenation unordered.
+    # Sorting the whole list keeps the rendered config.json stable regardless
+    # of the order clients were detected or added in.
+    #
+    # One entry per email, last occurrence winning. `unique` keeps the first
+    # match, so the list is reversed first: that makes a freshly issued
+    # credential in xray_add_clients beat the active one it replaces, which is
+    # what xray_force_update_secrets is for. Without this the reissued client
+    # was appended rather than substituted, so the server kept accepting the
+    # old credential, the inbound doubled, and the two entries for one email
+    # rendered to the same client profile path -- leaving that task reporting
+    # changed on every run forever. It also collapses a host that already
+    # doubled: duplicates read back from config.json are ordered oldest-first,
+    # so the surviving entry is the newer one.
     - name: config | set xray_all_clients fact
       ansible.builtin.set_fact:
         xray_all_clients: >-
-          {{ (xray_active_clients | default([]) |
+          {{ ((xray_active_clients | default([]) |
           difference(xray_inactive_clients | default([]))) +
-          xray_add_clients | default([]) | sort(attribute='name') }}
+          (xray_add_clients | default([]))) | reverse | list |
+          unique(attribute='email') | sort(attribute='email') }}
+
+- name: config | set reality settings fact
+  ansible.builtin.set_fact:
+    xray_reality_settings:
+      target: '{{ xray_server_config.vless_address }}:{{ xray_server_config.target_port }}'
+      serverNames:
+        - '{{ xray_server_config.vless_address }}'
+      privateKey: '{{ xray_server_config.private_key }}'
+      shortIds: "{{ xray_all_clients | map(attribute='shortId') | list }}"
+  no_log: true
 
 - name: config | create server configuration
   become: true
   ansible.builtin.template:
     src: server.j2
     dest: '{{ xray_docker_config.path }}/config.json'
-    mode: '0644'
+    owner: root
+    group: root
+    # holds the REALITY private key and every client UUID; the teddysun/xray
+    # container runs as root, so it can still read it. Deliberately no `backup`:
+    # timestamped copies would pile up on the host, each one holding a
+    # superseded private key.
+    mode: '0600'
     lstrip_blocks: true
   notify:
     - xray | restart container
 
+- name: config | create clients configuration folder
+  delegate_to: localhost
+  become: false
+  ansible.builtin.file:
+    path: '{{ xray_clients_config.path }}'
+    state: directory
+    mode: '0700'
+
 - name: config | create client configuration
   delegate_to: localhost
+  become: false
   ansible.builtin.template:
     src: client.j2
-    dest: '{{ xray_clients_config.path }}/{{ item.name }}.json'
-    mode: '0644'
+    dest: '{{ xray_clients_config.path }}/{{ xray_server_config.name }}-{{ item.email }}.json'
+    mode: '0600'
     lstrip_blocks: true
   loop: '{{ xray_all_clients }}'
   loop_control:
-    label: '{{ item.name }}'
+    label: '{{ item.email }}'
 
-- name: config | create geofiles
-  ansible.builtin.include_tasks:
-    file: geofile.yml
-  loop: '{{ xray_geofiles }}'
-  loop_control:
-    loop_var: geofile
+- name: config | save public key
+  become: true
+  ansible.builtin.copy:
+    content: '{{ xray_server_config.public_key }}'
+    dest: '{{ xray_docker_config.path }}/public_key'
+    owner: root
+    group: root
+    mode: '0644'

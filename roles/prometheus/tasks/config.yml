@@ -1,11 +1,25 @@
 ---
 
+# without this the TSDB lives inside the container and every image update wipes
+# the whole metrics history
+- name: config | prometheus data folder
+  become: true
+  ansible.builtin.file:
+    path: '{{ prometheus_docker_config.path }}/data'
+    state: directory
+    owner: '{{ prometheus_service_config.uid }}'
+    group: '{{ prometheus_service_config.uid }}'
+    mode: '0755'
+
 - name: config | prometheus configuration file
   become: true
   ansible.builtin.template:
     src: prometheus.yml.j2
     dest: '{{ prometheus_docker_config.path }}/prometheus.yml'
+    owner: root
+    group: root
     mode: '0644'
+    backup: true
     lstrip_blocks: true
   notify:
     - prometheus | restart container
@@ -18,6 +32,8 @@
       ansible.builtin.file:
         path: '{{ prometheus_docker_config.path }}/alerts'
         state: directory
+        owner: root
+        group: root
         mode: '0755'
 
     - name: config | prometheus alerting rules files
@@ -25,6 +41,8 @@
       ansible.builtin.copy:
         src: '{{ item }}'
         dest: '{{ prometheus_docker_config.path }}/alerts/{{ item | basename }}'
+        owner: root
+        group: root
         mode: '0644'
       with_fileglob:
         - '*.yml'

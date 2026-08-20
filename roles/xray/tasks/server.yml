@@ -1,19 +1,23 @@
 ---
 
+# `-runtime` matters: naming this container after the service would collide with
+# the running xray container and take the service down to run a one-shot
+# `x25519` command.
 - name: config | generate server keys
   become: true
   community.docker.docker_container:
-    name: '{{ xray_docker_config.name }}'
+    name: '{{ xray_docker_config.name }}-runtime'
     image: '{{ xray_docker_config.image }}:{{ xray_docker_config.tag }}'
     cleanup: true
     command: xray x25519
     detach: false
   register: xray_keys
+  changed_when: true
 
 - name: config | set server keys fact
   ansible.builtin.set_fact:
     xray_private_key: >-
-      {{ xray_keys.container.Output | regex_search('(?<=Private key: )(.*?)(?=\n)') }}
+      {{ xray_keys.container.Output | regex_search('(?<=PrivateKey: )(.*?)(?=\n)') }}
     xray_public_key: >-
-      {{ xray_keys.container.Output | regex_search('(?<=Public key: )(.*?)(?=\n)') }}
+      {{ xray_keys.container.Output | regex_search('(?<=Password \(PublicKey\): )(.*?)(?=\n)') }}
   no_log: true

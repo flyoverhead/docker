@@ -1,18 +1,21 @@
 ---
 
-- name: detect | services
+# consumed by install.yml, which only touches systemd-resolved and dnsmasq when
+# those units actually exist on the host
+- name: detect | service facts
   ansible.builtin.service_facts:
 
 - name: detect | pihole container
+  become: true
   community.docker.docker_container_info:
     name: '{{ pihole_docker_config.name }}'
   register: pihole_container
 
-- name: detect | pihole container exists fact
+- name: detect | set pihole_container_exists fact
   ansible.builtin.set_fact:
     pihole_container_exists: '{{ true if pihole_container.exists else false }}'
 
-- name: detect | pihole container update fact
+- name: detect | set pihole_container_update fact
   ansible.builtin.set_fact:
     pihole_container_update: >-
       {{ true if

@@ -1,14 +1,21 @@
 ---
 
 galaxy_info:
+  role_name: dnscrypt
+  namespace: flyoverhead
   author: flyoverhead
-  description: Dnscrypt-Proxy docker service deployment
-  license: ISC
-  min_ansible_version: '2.13'
+  description: DNSCrypt Proxy docker service deployment
+  license: GPL-3.0-only
+  min_ansible_version: '2.16'
   platforms:
     - name: Debian
       versions:
-        - bullseye
         - bookworm
+        - trixie
   galaxy_tags:
-    - dnscrypt
+    - dns
+    - docker
+    - networking
+    - privacy
+
+dependencies: []

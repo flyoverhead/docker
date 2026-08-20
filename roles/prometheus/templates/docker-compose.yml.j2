@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 services:
@@ -8,10 +9,11 @@ services:
     environment:
       - TZ={{ prometheus_docker_config.timezone }}
     volumes:
-      - {{ prometheus_docker_config.path }}:/etc/prometheus
+      - {{ prometheus_docker_config.path }}:/etc/prometheus:ro
+      - {{ prometheus_docker_config.path }}/data:/prometheus
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if prometheus_docker_config.network_mode == "bridge" %}
+{% if prometheus_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ prometheus_service_config.listening_port }}:{{ prometheus_service_config.listening_port }}"
 {% endif %}

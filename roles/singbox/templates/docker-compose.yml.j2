@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 services:
@@ -8,19 +9,29 @@ services:
     environment:
       - TZ={{ singbox_docker_config.timezone }}
     volumes:
-      - {{ singbox_docker_config.path }}/config.json:/etc/sing-box/config.json
-      - {{ singbox_docker_config.path }}/log/box.log:/var/lib/sing-box/box.log
+      - {{ singbox_docker_config.path }}/config.json:/etc/sing-box/config.json:ro
+      - {{ singbox_docker_config.path }}/data:/var/lib/sing-box
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 {% if singbox_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ singbox_server_config.listening_port }}:{{ singbox_server_config.listening_port }}"
+      - "{{ singbox_server_config.dns_port }}:{{ singbox_server_config.dns_port }}/tcp"
+      - "{{ singbox_server_config.dns_port }}:{{ singbox_server_config.dns_port }}/udp"
 {% endif %}
     network_mode: {{ singbox_docker_config.network_mode }}
+    cap_add:
+      - NET_ADMIN
     command: -D /var/lib/sing-box -C /etc/sing-box/ run
+{% if singbox_restarter.enabled %}
   restarter:
-    image: docker:cli
+    image: {{ singbox_restarter.image }}
     container_name: {{ singbox_docker_config.name }}-restarter
     restart: {{ singbox_docker_config.restart_policy }}
-    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
-    command: ["/bin/sh", "-c", "while true; do sleep 3600; docker restart {{ singbox_docker_config.name }}; done"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - /bin/sh
+      - -c
+      - while true; do sleep {{ singbox_restarter.interval }}; docker restart {{ singbox_docker_config.name }}; done
+{% endif %}

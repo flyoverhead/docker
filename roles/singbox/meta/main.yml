@@ -1,14 +1,21 @@
 ---
 
 galaxy_info:
+  role_name: singbox
+  namespace: flyoverhead
   author: flyoverhead
-  description: Sing-Box VPN docker service deployment
-  license: MPL-2.0
-  min_ansible_version: '2.13'
+  description: Sing-box VPN docker service deployment
+  license: GPL-3.0-only
+  min_ansible_version: '2.16'
   platforms:
     - name: Debian
       versions:
-        - bullseye
         - bookworm
+        - trixie
   galaxy_tags:
-    - singbox
+    - docker
+    - networking
+    - proxy
+    - vpn
+
+dependencies: []

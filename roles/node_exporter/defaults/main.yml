@@ -6,7 +6,7 @@
 node_exporter_docker_config:
   name: node-exporter
   image: prom/node-exporter
-  tag: v1.8.2
+  tag: v1.12.1
   path: '{{ docker_path }}/node-exporter'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'
@@ -16,6 +16,7 @@ node_exporter_service_config:
   listening_address: 0.0.0.0
   listening_port: 9100
 
+# `$$` escapes a literal `$` for docker compose interpolation
 node_exporter_command:
   - >-
     --web.listen-address={{ node_exporter_service_config.listening_address

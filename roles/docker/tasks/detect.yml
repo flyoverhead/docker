@@ -1,8 +1,14 @@
 ---
 
-- name: detect | package fact
+- name: detect | package facts
   ansible.builtin.package_facts:
 
-- name: detect | docker installed fact
+- name: detect | set docker_installed fact
   ansible.builtin.set_fact:
     docker_installed: "{{ true if 'docker-ce' in ansible_facts.packages else false }}"
+
+- name: detect | set docker_installed_version fact
+  ansible.builtin.set_fact:
+    docker_installed_version: "{{ ansible_facts.packages['docker-ce'][0].version }}"
+  when:
+    - docker_installed

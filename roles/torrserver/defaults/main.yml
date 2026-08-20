@@ -1,16 +1,26 @@
 ---
 
 # https://github.com/YouROK/TorrServer
-# https://hub.docker.com/r/ksey/torrserver/tags
+# https://github.com/YouROK/TorrServer/pkgs/container/torrserver
+#
+# Upstream's own image, published from the TorrServer repository. It replaces
+# the third-party `ksey/torrserver:latest`, which was last built in 2022 and
+# only ever published a moving `latest` tag -- so the update detection in
+# detect.yml could never fire.
 
 torrserver_docker_config:
   name: torrserver
-  image: ksey/torrserver
-  tag: latest
+  image: ghcr.io/yourok/torrserver
+  tag: MatriX.143
   path: '{{ docker_path }}/torrserver'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'
   timezone: '{{ docker_timezone }}'
 
 torrserver_service_config:
+  # the image defaults to 8090; TS_PORT below overrides it
   listening_port: 8070
+  # kept as `db` rather than `config`: this is the same host directory the
+  # previous image used, so an existing torrserver.db survives the migration
+  data_dir: db
+  torrents_dir: torrents

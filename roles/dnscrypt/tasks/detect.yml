@@ -1,18 +1,20 @@
 ---
 
-- name: detect | services
+# consumed by config.yml, which masks avahi-daemon only when it is present
+- name: detect | service facts
   ansible.builtin.service_facts:
 
 - name: detect | dnscrypt container
+  become: true
   community.docker.docker_container_info:
     name: '{{ dnscrypt_docker_config.name }}'
   register: dnscrypt_container
 
-- name: detect | dnscrypt container exists fact
+- name: detect | set dnscrypt_container_exists fact
   ansible.builtin.set_fact:
     dnscrypt_container_exists: '{{ true if dnscrypt_container.exists else false }}'
 
-- name: detect | dnscrypt container update fact
+- name: detect | set dnscrypt_container_update fact
   ansible.builtin.set_fact:
     dnscrypt_container_update: >-
       {{ true if

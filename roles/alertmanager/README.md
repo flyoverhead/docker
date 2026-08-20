@@ -4,33 +4,59 @@
 
 ## Requirements
 
-Custom messages templates can be added by placing templates files to `files` directory, e.g., `files/custom.tmpl`.
+Message templates are deployed from this role's `files` directory: every
+`*.tmpl` file there is copied to `<alertmanager_docker_config.path>/templates/`
+and picked up by the `templates:` entry in the rendered `alertmanager.yml`. The
+role ships `telegram.tmpl` and `slack.tmpl`; add your own alongside them.
 
 ## Role variables
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
-| `alertmanager_docker_config` | Docker configuration | Definition example in [defaults.yml](defaults/main.yml) |
-| `alertmanager_service_config` | Service configuration | Definition example in [defaults.yml](defaults/main.yml) |
-| `alertmanager_command` | Service start options | `[--config.file=/etc/alertmanager/alertmanager.yml]` |
+| `alertmanager_docker_config` | Docker configuration | Definition example in [defaults/main.yml](defaults/main.yml) |
+| `alertmanager_service_config` | Service configuration and the image uid | Definition example in [defaults/main.yml](defaults/main.yml) |
+| `alertmanager_command` | Service start options | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `alertmanager_global_config` | Global configuration parameters | `Example below` |
 | `alertmanager_route_config` | Route configuration parameters | `Example below` |
-| `alertmanager_receivers_config` | Recievers configuration parameters | `Example below` |
+| `alertmanager_receivers_config` | Receivers configuration parameters | `Example below` |
+
+Silences and the notification log are persisted to
+`<alertmanager_docker_config.path>/data`, owned by
+`alertmanager_service_config.uid` (65534, the `nobody` user the
+`prom/alertmanager` image runs as). Without that volume every image update
+re-notifies alerts that were already silenced.
+
+`alertmanager_command` replaces the image `CMD` outright, so `--storage.path`
+has to be repeated there.
+
+## Security note
+
+`alertmanager.yml` holds receiver credentials (bot tokens, webhook URLs) and is
+rendered world-readable, because the `prom/alertmanager` image runs as `nobody`
+and reads it through the bind mount. Keep the values themselves in
+`ansible-vault`; they are still cleartext on the host once rendered.
+
+## Facts set by this role
+
+| Fact | Description |
+| :--- | :--- |
+| `alertmanager_container_exists` | Whether the container is already present |
+| `alertmanager_container_update` | Whether the running container's image differs from the configured tag |
 
 ## Dependencies
 
 | Name | Description |
 | :--- | :--- |
 | `flyoverhead.docker.docker` | [README.md](../docker/README.md) |
-| `flyoverhead.docker.node-exporter` | [README.md](../node-exporter/README.md) |
-| `flyoverhead.docker.prometheus` | [README.md](../prometheus/README.md) |
 
 ## Example playbook
 
 ```yaml
 - hosts: docker
+  gather_facts: true
   roles:
-      - role: flyoverhead.docker.alertmanager
+    - role: flyoverhead.docker.docker
+    - role: flyoverhead.docker.alertmanager
 ```
 
 ## Global configuration example
@@ -52,7 +78,7 @@ alertmanager_route_config:
   receiver: telegram
 ```
 
-## Recievers configuration example
+## Receivers configuration example
 
 ```yaml
 alertmanager_receivers_config:
@@ -65,6 +91,19 @@ alertmanager_receivers_config:
         message: '{% raw %}{{ template "telegram.custom.message" . }}{% endraw %}'
         parse_mode: Markdown
 ```
+
+`chat_id` is coerced to an integer by the template: Alertmanager wants an int64
+there, and a vault-sourced value would otherwise be rendered as a quoted string
+and rejected.
+
+## Tags
+
+| Tag | Purpose |
+| :--- | :--- |
+| `alertmanager.detect` | Container state detection only |
+| `alertmanager.install` | First deployment |
+| `alertmanager.update` | Image tag change: pull and recreate |
+| `alertmanager.config` | `alertmanager.yml`, message templates and the data volume |
 
 ## License
 

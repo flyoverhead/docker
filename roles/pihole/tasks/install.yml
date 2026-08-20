@@ -3,18 +3,24 @@
 - name: install | pihole required packages
   become: true
   ansible.builtin.apt:
-    name: '{{ item }}'
+    name: '{{ pihole_required_packages }}'
     state: present
-  loop: '{{ pihole_required_packages }}'
+    update_cache: true
+    cache_valid_time: 3600
 
+# pi-hole binds :53 itself, so the resolved stub listener on 127.0.0.53:53 and
+# any host dnsmasq have to get out of the way first
 - name: install | disable systemd-resolved stub resolver
   become: true
   ansible.builtin.lineinfile:
     path: /etc/systemd/resolved.conf
-    regexp: ^#DNSStubListener=
+    regexp: ^#?DNSStubListener=
     line: DNSStubListener=no
+    owner: root
+    group: root
+    mode: '0644'
   when:
-    - '"systemd-resolved.service" in services'
+    - '"systemd-resolved.service" in ansible_facts.services'
   notify:
     - pihole | restart systemd-resolved
 
@@ -26,12 +32,13 @@
     enabled: false
     masked: true
   when:
-    - '"dnsmasq.service" in services'
+    - '"dnsmasq.service" in ansible_facts.services'
 
+# :53 has to be free before the container is started at the end of the role
 - name: install | run handlers
   ansible.builtin.meta: flush_handlers
 
-- name: install | configure sysctl ipv6 support
+- name: install | sysctl ipv6 support
   become: true
   ansible.posix.sysctl:
     name: '{{ item }}'
@@ -41,31 +48,33 @@
   loop_control:
     label: '{{ item }} value set to {{ 0 if pihole_service_config.ipv6_support else 1 }}'
 
-- name: install | pihole service folder
+- name: install | pihole service folders
   become: true
   ansible.builtin.file:
-    path: '{{ pihole_docker_config.path }}'
+    path: '{{ item }}'
     state: directory
+    owner: root
+    group: root
     mode: '0755'
-
-- name: install | pihole persistent data directory
-  become: true
-  ansible.builtin.file:
-    path: '{{ pihole_docker_config.path }}/data'
-    state: directory
-    mode: '0755'
-  register: pihole_data_dir_result
-  changed_when: pihole_data_dir_result.uid != 999
+  loop:
+    - '{{ pihole_docker_config.path }}'
+    # the container entrypoint chowns this to the pihole uid on first start,
+    # which is what the CHOWN capability in the compose file is for
+    - '{{ pihole_docker_config.path }}/data'
 
 - name: install | pihole docker-compose file
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: '{{ pihole_docker_config.path }}/docker-compose.yml'
+    owner: root
+    group: root
     mode: '0644'
     lstrip_blocks: true
   notify:
     - pihole | start container
 
+# config.yml queries gravity.db, which only exists once the container has run
+# its first start, so the container cannot wait for the role-wide flush
 - name: install | run handlers
   ansible.builtin.meta: flush_handlers

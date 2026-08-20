@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 services:
@@ -8,7 +9,8 @@ services:
     environment:
       - TZ={{ alertmanager_docker_config.timezone }}
     volumes:
-      - {{ alertmanager_docker_config.path }}:/etc/alertmanager
+      - {{ alertmanager_docker_config.path }}:/etc/alertmanager:ro
+      - {{ alertmanager_docker_config.path }}/data:/alertmanager
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 {% if alertmanager_docker_config.network_mode == 'bridge' %}

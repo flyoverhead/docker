@@ -1,55 +1,64 @@
 ---
 
+# Reset first: set_fact is host-scoped and survives loop iterations, so without
+# this a client that carries its own uuid/short_id (and therefore skips the
+# block below) would inherit the credentials generated for a previous client --
+# handing two clients the same UUID.
+- name: client | reset generated secrets
+  ansible.builtin.set_fact:
+    singbox_generated_client_uuid: ''
+    singbox_generated_client_short_id: ''
+
 - name: client | generate secrets
   when: >-
-    (item.uuid | default('') | length == 0
-    and
-    item.short_id | default('') | length == 0)
-    or singbox_force_update_secrets
+    item.uuid | default('') | length == 0
+    or item.short_id | default('') | length == 0
   block:
 
     - name: client | generate uuid
       become: true
       community.docker.docker_container:
-        name: '{{ singbox_docker_config.name }}'
+        name: '{{ singbox_docker_config.name }}-runtime'
         image: '{{ singbox_docker_config.image }}:{{ singbox_docker_config.tag }}'
         cleanup: true
         command: generate uuid
         detach: false
-      register: sing_box_client_uuid_output
+      register: singbox_client_uuid_output
       changed_when: true
 
     - name: client | set uuid fact
       ansible.builtin.set_fact:
-        generated_client_uuid: '{{ sing_box_client_uuid_output.container.Output | trim }}'
+        singbox_generated_client_uuid: '{{ singbox_client_uuid_output.container.Output | trim }}'
 
     - name: client | generate short id
+      become: true
       community.docker.docker_container:
-        name: '{{ singbox_docker_config.name }}'
+        name: '{{ singbox_docker_config.name }}-runtime'
         image: '{{ singbox_docker_config.image }}:{{ singbox_docker_config.tag }}'
         cleanup: true
         command: generate rand 8 --hex
         detach: false
-      register: sing_box_client_short_id_output
+      register: singbox_client_short_id_output
       changed_when: true
 
     - name: client | set short id fact
       ansible.builtin.set_fact:
-        generated_client_short_id: '{{ sing_box_client_short_id_output.container.Output | trim }}'
+        singbox_generated_client_short_id: '{{ singbox_client_short_id_output.container.Output | trim }}'
 
 - name: client | set uuid and short id facts
   ansible.builtin.set_fact:
-    client_uuid: >-
-      {{ generated_client_uuid if
-      generated_client_uuid | default([]) | length > 0
-      else item.uuid }}
-    client_short_id: >-
-      {{ generated_client_short_id if
-      generated_client_short_id | default([]) | length > 0
-      else item.short_id }}
+    singbox_client_uuid: >-
+      {{ singbox_generated_client_uuid
+      if singbox_generated_client_uuid | default('') | length > 0
+      else item.uuid | default('') }}
+    singbox_client_short_id: >-
+      {{ singbox_generated_client_short_id
+      if singbox_generated_client_short_id | default('') | length > 0
+      else item.short_id | default('') }}
 
 - name: client | add secrets to clients config
   ansible.builtin.set_fact:
-    sing_box_add_clients: >-
-      {{ sing_box_add_clients | default([]) +
-      [{'name': item, 'uuid': client_uuid, 'short_id': client_short_id}] }}
+    singbox_add_clients: >-
+      {{ singbox_add_clients | default([]) +
+      [item | combine({'uuid': singbox_client_uuid,
+      'short_id': singbox_client_short_id})] }}
