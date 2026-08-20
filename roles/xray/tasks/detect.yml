@@ -6,6 +6,7 @@
   block:
 
     - name: detect | xray container
+      become: true
       community.docker.docker_container_info:
         name: '{{ xray_docker_config.name }}'
       register: xray_container

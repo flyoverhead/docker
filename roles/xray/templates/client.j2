@@ -1,3 +1,8 @@
+{#
+  `log` is rendered last and unconditionally: every other section is optional
+  and emits a trailing comma, so an optional section in last position produces
+  invalid JSON the moment it is left empty.
+#}
 {
 {% if (xray_clients_config.dns | default({})).items() | length > 0 %}
   "dns": {
@@ -43,13 +48,11 @@
 {% endfor %}
   },
 {% endif %}
-{% if (xray_clients_config.log | default({})).items() | length > 0 %}
   "log": {
-{% for key, value in xray_clients_config.log.items() %}
+{% for key, value in (xray_clients_config.log | default({})).items() %}
     {{ key | to_nice_json(sort_keys=false) |
     trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
     trim | indent(4) }}{{ ',' if not loop.last }}
 {% endfor %}
   }
-{% endif %}
 }

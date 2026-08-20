@@ -6,7 +6,7 @@
 prometheus_docker_config:
   name: prometheus
   image: prom/prometheus
-  tag: v3.0.0
+  tag: v3.14.0
   path: '{{ docker_path }}/prometheus'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'
@@ -15,12 +15,21 @@ prometheus_docker_config:
 prometheus_service_config:
   listening_address: 0.0.0.0
   listening_port: 9090
+  retention_time: 30d
+  # uid/gid of the `nobody` user the prom/prometheus image runs as; the TSDB
+  # volume has to be writable by it
+  uid: 65534
 
+# `command` replaces the image CMD outright, so the storage path has to be
+# repeated here -- otherwise prometheus falls back to a relative `data/` and the
+# TSDB lands outside the mounted volume
 prometheus_command:
   - >-
     --web.listen-address={{ prometheus_service_config.listening_address
     }}:{{ prometheus_service_config.listening_port }}
   - --config.file=/etc/prometheus/prometheus.yml
+  - --storage.tsdb.path=/prometheus
+  - --storage.tsdb.retention.time={{ prometheus_service_config.retention_time }}
 
 prometheus_global_config:
   scrape_interval: 15s

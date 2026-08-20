@@ -1,27 +1,40 @@
 ---
 
-- name: install | sing-box service folder
+# `data` is the container working dir set by `-D` in the compose command: the
+# cache file and the log named by singbox_server_config.log.output are resolved
+# relative to it, so it has to survive a container recreate
+- name: install | sing-box service folders
   become: true
   ansible.builtin.file:
-    path: '{{ singbox_docker_config.path }}/{{ item }}'
+    path: '{{ item }}'
     state: directory
+    owner: root
+    group: root
     mode: '0755'
   loop:
-    - data
-    - log
+    - '{{ singbox_docker_config.path }}'
+    - '{{ singbox_docker_config.path }}/data'
 
-- name: install | box.log file
+# config.json is bind-mounted as a file. Docker creates a *directory* at a
+# missing bind source, which would make the container fail to start, so the file
+# has to exist before the compose file is ever brought up.
+- name: install | config.json placeholder
   become: true
-  ansible.builtin.file:
-    path: '{{ singbox_docker_config.path }}/log/box.log'
-    state: touch
-    mode: '0644'
+  ansible.builtin.copy:
+    content: '{}'
+    dest: '{{ singbox_docker_config.path }}/config.json'
+    owner: root
+    group: root
+    mode: '0600'
+    force: false
 
 - name: install | docker-compose file
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: '{{ singbox_docker_config.path }}/docker-compose.yml'
+    owner: root
+    group: root
     mode: '0644'
     lstrip_blocks: true
   notify:

@@ -2,8 +2,14 @@
 
 - name: deploy services
   hosts: docker
+  gather_facts: true
 
   roles:
+
+    # must run first: every other role reads docker_path, docker_network_mode,
+    # docker_restart_policy and docker_timezone from its defaults, and the
+    # community.docker modules need the engine and python3-requests in place
+    - role: docker
 
     - role: node_exporter
       when: '"node_exporter" in group_names'

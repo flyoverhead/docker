@@ -1,5 +1,8 @@
 ---
 
+# `-runtime` matters: naming this container after the service would collide with
+# the running xray container and take the service down to run a one-shot
+# `x25519` command.
 - name: config | generate server keys
   become: true
   community.docker.docker_container:
@@ -9,6 +12,7 @@
     command: xray x25519
     detach: false
   register: xray_keys
+  changed_when: true
 
 - name: config | set server keys fact
   ansible.builtin.set_fact:

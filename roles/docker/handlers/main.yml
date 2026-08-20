@@ -14,5 +14,7 @@
     state: restarted
     enabled: true
 
+# group membership is only picked up by a new login session, so the persistent
+# connection has to be dropped for the docker socket to be usable without sudo
 - name: docker | reload groups
   ansible.builtin.meta: reset_connection

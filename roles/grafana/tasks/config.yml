@@ -1,21 +1,37 @@
 ---
 
-- name: config | grafana datasources and dashboards folders
+# without this grafana.db lives inside the container and every image update
+# loses users, API keys, alert rules and any UI-created dashboard
+- name: config | grafana data folder
+  become: true
+  ansible.builtin.file:
+    path: '{{ grafana_docker_config.path }}/data'
+    state: directory
+    owner: '{{ grafana_service_config.uid }}'
+    group: '{{ grafana_service_config.uid }}'
+    mode: '0755'
+
+- name: config | grafana provisioning folders
   become: true
   ansible.builtin.file:
     path: '{{ grafana_docker_config.path }}/provisioning/{{ item }}'
     state: directory
+    owner: root
+    group: root
     mode: '0755'
   loop:
     - dashboards
     - datasources
 
-- name: config | grafana datasources and dashboards
+- name: config | grafana provisioning files
   become: true
   ansible.builtin.template:
     src: '{{ item }}.j2'
     dest: '{{ grafana_docker_config.path }}/provisioning/{{ item }}/{{ item }}.yaml'
+    owner: root
+    group: root
     mode: '0644'
+    backup: true
     lstrip_blocks: true
   loop:
     - dashboards
@@ -23,11 +39,13 @@
   notify:
     - grafana | restart container
 
-- name: config | grafana datasources and dashboards folders
+- name: config | grafana dashboards folder
   become: true
   ansible.builtin.file:
     path: '{{ grafana_docker_config.path }}/dashboards'
     state: directory
+    owner: root
+    group: root
     mode: '0755'
 
 - name: config | grafana dashboards
@@ -35,9 +53,15 @@
   ansible.builtin.get_url:
     url: https://grafana.com/api/dashboards/{{ item.dashboard_id }}/revisions/{{ item.revision_id }}/download
     dest: '{{ grafana_docker_config.path }}/dashboards/{{ item.name }}_{{ item.dashboard_id }}.json'
+    owner: root
+    group: root
     mode: '0644'
   loop: '{{ grafana_dashboards }}'
   loop_control:
     label: '{{ item.name }}'
+  register: grafana_dashboard_download
+  until: grafana_dashboard_download is succeeded
+  retries: 3
+  delay: 5
   notify:
     - grafana | restart container

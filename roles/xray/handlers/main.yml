@@ -1,6 +1,7 @@
 ---
 
 - name: xray | kill container
+  become: true
   community.docker.docker_compose_v2:
     project_src: '{{ xray_docker_config.path }}'
     remove_images: local
@@ -16,11 +17,14 @@
     wait: true
     wait_timeout: 60
 
+# `state: present` with `recreate: always` rather than `state: restarted`: the
+# latter maps to `docker compose restart`, which leaves the old container -- and
+# therefore the old image and the old bind mounts -- in place.
 - name: xray | restart container
   become: true
   community.docker.docker_compose_v2:
     project_src: '{{ xray_docker_config.path }}'
+    state: present
     recreate: always
-    state: restarted
     wait: true
     wait_timeout: 60

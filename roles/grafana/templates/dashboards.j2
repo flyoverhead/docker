@@ -1,14 +1,18 @@
+{{ ansible_managed | comment }}
 ---
 
 apiVersion: 1
 
 providers:
-  - name: "{{ grafana_source.name }}"
+  - name: {{ grafana_source.name }}
     orgId: 1
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10
     allowUiUpdates: false
     options:
-      path: /var/lib/grafana/dashboards
+      # deliberately not under /var/lib/grafana: that path is the persistent
+      # data volume, and nesting the read-only dashboard mount inside it makes
+      # the two bind mounts order-dependent
+      path: /etc/grafana/dashboards
       foldersFromFilesStructure: true

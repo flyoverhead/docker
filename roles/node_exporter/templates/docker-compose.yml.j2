@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 services:
@@ -14,7 +15,7 @@ services:
       - /:/host:ro,rslave
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-{% if node_exporter_docker_config.network_mode == "bridge" %}
+{% if node_exporter_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ node_exporter_service_config.listening_port }}:{{ node_exporter_service_config.listening_port }}"
 {% endif %}

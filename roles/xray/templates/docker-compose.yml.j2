@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 services:
@@ -8,12 +9,13 @@ services:
     environment:
       - TZ={{ xray_docker_config.timezone }}
     volumes:
-      - {{ xray_docker_config.path }}/config.json:/etc/xray/config.json
+      - {{ xray_docker_config.path }}/config.json:/etc/xray/config.json:ro
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 {% if xray_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ xray_server_config.listening_port }}:{{ xray_server_config.listening_port }}"
-      - "{{ xray_server_config.dns_port }}:{{ xray_server_config.dns_port }}"
+      - "{{ xray_server_config.dns_port }}:{{ xray_server_config.dns_port }}/tcp"
+      - "{{ xray_server_config.dns_port }}:{{ xray_server_config.dns_port }}/udp"
 {% endif %}
     network_mode: {{ xray_docker_config.network_mode }}

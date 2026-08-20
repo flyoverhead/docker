@@ -7,11 +7,14 @@
 xray_docker_config:
   name: xray
   image: teddysun/xray
-  tag: 26.3.23
+  tag: 26.7.28
   path: '{{ docker_path }}/xray'
-  restart_policy: always
+  restart_policy: '{{ docker_restart_policy }}'
+  # deliberately not '{{ docker_network_mode }}': a REALITY server behind a
+  # docker bridge sees the gateway address as the client source, so host mode is
+  # the working default. Override only if you know you want the NAT.
   network_mode: host
-  timezone: Europe/Moscow
+  timezone: '{{ docker_timezone }}'
 
 xray_server_config:
   name: '{{ inventory_hostname }}'
@@ -124,6 +127,17 @@ xray_clients_config:
       #   outboundTag: direct
   log:
     loglevel: warning
+
+# Per-client `inbounds` override, keyed by client email. A client listed here
+# gets these inbounds in its profile instead of xray_clients_config.inbounds.
+xray_client_inbounds: {}
+  # macbook:
+  #   - protocol: socks
+  #     tag: socks-in
+  #     listen: 127.0.0.1
+  #     port: 1080
+  #     settings:
+  #       udp: true
 
 xray_tuning_config:
   enabled: false

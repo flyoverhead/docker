@@ -1,18 +1,16 @@
 ---
 
-- name: detect | services
-  ansible.builtin.service_facts:
-
 - name: detect | node-exporter container
+  become: true
   community.docker.docker_container_info:
     name: '{{ node_exporter_docker_config.name }}'
   register: node_exporter_container
 
-- name: detect | node-exporter container exists fact
+- name: detect | set node_exporter_container_exists fact
   ansible.builtin.set_fact:
     node_exporter_container_exists: '{{ true if node_exporter_container.exists else false }}'
 
-- name: detect | node-exporter container update fact
+- name: detect | set node_exporter_container_update fact
   ansible.builtin.set_fact:
     node_exporter_container_update: >-
       {{ true if

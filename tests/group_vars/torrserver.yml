@@ -2,7 +2,7 @@
 
 torrserver_docker_config:
   name: torrserver
-  image: ksey/torrserver
+  image: ghcr.io/yourok/torrserver
   tag: '{{ torrserver_version }}'
   path: '{{ docker_path }}/torrserver'
   restart_policy: '{{ docker_restart_policy }}'

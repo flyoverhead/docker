@@ -1,18 +1,16 @@
 ---
 
-- name: detect | services
-  ansible.builtin.service_facts:
-
 - name: detect | grafana container
+  become: true
   community.docker.docker_container_info:
     name: '{{ grafana_docker_config.name }}'
   register: grafana_container
 
-- name: detect | grafana container exists fact
+- name: detect | set grafana_container_exists fact
   ansible.builtin.set_fact:
     grafana_container_exists: '{{ true if grafana_container.exists else false }}'
 
-- name: detect | grafana container update fact
+- name: detect | set grafana_container_update fact
   ansible.builtin.set_fact:
     grafana_container_update: >-
       {{ true if

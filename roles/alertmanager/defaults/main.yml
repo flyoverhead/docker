@@ -6,7 +6,7 @@
 alertmanager_docker_config:
   name: alertmanager
   image: prom/alertmanager
-  tag: v0.27.0
+  tag: v0.34.0
   path: '{{ docker_path }}/alertmanager'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'
@@ -15,12 +15,19 @@ alertmanager_docker_config:
 alertmanager_service_config:
   listening_address: 0.0.0.0
   listening_port: 9093
+  # uid/gid of the `nobody` user the prom/alertmanager image runs as; the
+  # silences/notification-log volume has to be writable by it
+  uid: 65534
 
+# `command` replaces the image CMD outright, so the storage path has to be
+# repeated here -- otherwise alertmanager falls back to a relative `data/` and
+# silences and the notification log land outside the mounted volume
 alertmanager_command:
   - >-
     --web.listen-address={{ alertmanager_service_config.listening_address
     }}:{{ alertmanager_service_config.listening_port }}
   - --config.file=/etc/alertmanager/alertmanager.yml
+  - --storage.path=/alertmanager
 
 alertmanager_global_config:
   resolve_timeout: 5m

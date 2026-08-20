@@ -1,0 +1,79 @@
+---
+
+singbox_docker_config:
+  name: sing-box
+  image: ghcr.io/sagernet/sing-box
+  tag: '{{ singbox_version }}'
+  path: '{{ docker_path }}/sing-box'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: host
+  timezone: '{{ docker_timezone }}'
+
+singbox_server_config:
+  name: '{{ inventory_hostname }}'
+  tag: proxy
+  listening_address: 0.0.0.0
+  listening_port: 8443
+  public_address: '{{ ansible_host }}'
+  vless_address: npo.nl
+  vless_port: 443
+  dns_port: 53
+  flow: xtls-rprx-vision
+  route:
+    default_domain_resolver:
+      server: local
+    final: out-direct
+    auto_detect_interface: true
+  outbounds:
+    - type: direct
+      tag: out-direct
+  log:
+    level: error
+    output: box.log
+    timestamp: true
+
+singbox_clients_config:
+  path: '{{ inventory_dir }}/files/clients/singbox'
+  clients:
+    - name: router
+    - name: smartphone
+      platform: android
+  outbounds:
+    - type: vless
+      tag: out-proxy
+      server: '{{ ansible_host }}'
+      server_port: 8443
+      uuid: '{{ item.uuid | default("") }}'
+      flow: xtls-rprx-vision
+      tls:
+        enabled: true
+        server_name: npo.nl
+        utls:
+          enabled: true
+          fingerprint: chrome
+        reality:
+          enabled: true
+          public_key: '{{ singbox_server_config.public_key | default("") }}'
+          short_id: '{{ item.short_id | default("") }}'
+    - type: direct
+      tag: out-direct
+  route:
+    rules: []
+    rule_set: []
+    default_domain_resolver:
+      server: dns-direct
+    auto_detect_interface: true
+  dns:
+    servers:
+      - tag: dns-direct
+        address: local
+        detour: out-direct
+    final: dns-direct
+    strategy: ipv4_only
+    independent_cache: true
+  log:
+    level: error
+    timestamp: true
+  experimental:
+    cache_file:
+      enabled: true

@@ -1,16 +1,29 @@
 ---
 
 - name: dnscrypt | start container
+  become: true
   community.docker.docker_compose_v2:
     project_src: '{{ dnscrypt_docker_config.path }}'
     state: present
     wait: true
     wait_timeout: 60
 
+# `state: restarted` maps to `docker compose restart`: it reloads bind-mounted
+# configuration without touching the image. Use it for config changes only.
 - name: dnscrypt | restart container
   become: true
   community.docker.docker_compose_v2:
     project_src: '{{ dnscrypt_docker_config.path }}'
     state: restarted
+
+# An image or compose change needs `docker compose up` -- `restart` would keep
+# running the old image forever. `pull: always` makes a moving tag resolve too.
+- name: dnscrypt | recreate container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ dnscrypt_docker_config.path }}'
+    state: present
+    pull: always
+    recreate: always
     wait: true
     wait_timeout: 60

@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 global:
@@ -8,7 +9,7 @@ alerting:
     {{ prometheus_alert_jobs | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(4) }}
 
 rule_files:
-- alerts/*.yml
+  - alerts/*.yml
 
 scrape_configs:
   {{ prometheus_scrape_jobs | to_nice_yaml(indent=2, sort_keys=false) | trim | indent(2) }}

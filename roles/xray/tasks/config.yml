@@ -1,6 +1,8 @@
 ---
 
 - name: config | server tuning
+  when:
+    - xray_tuning_config.enabled
   block:
 
     - name: config | kernel parameters
@@ -13,9 +15,7 @@
       loop_control:
         label: '{{ item.key }} is set to {{ item.value }}'
       when:
-        - xray_tuning_config.enabled
-        - item.key != 'enabled'
-        - item.key != 'system_limits'
+        - item.key not in ['enabled', 'system_limits']
 
     - name: config | nofile limits
       become: true
@@ -29,8 +29,6 @@
         subelements('types', skip_missing=true) }}
       loop_control:
         label: '{{ item.0.domain }} {{ item.1.type }} {{ item.0.limit }} {{ item.1.value }}'
-      when:
-        - xray_tuning_config.enabled
 
 - name: config | server secrets
   block:
@@ -99,17 +97,32 @@
   ansible.builtin.template:
     src: server.j2
     dest: '{{ xray_docker_config.path }}/config.json'
-    mode: '0644'
+    owner: root
+    group: root
+    # holds the REALITY private key and every client UUID; the teddysun/xray
+    # container runs as root, so it can still read it. Deliberately no `backup`:
+    # timestamped copies would pile up on the host, each one holding a
+    # superseded private key.
+    mode: '0600'
     lstrip_blocks: true
   notify:
     - xray | restart container
 
+- name: config | create clients configuration folder
+  delegate_to: localhost
+  become: false
+  ansible.builtin.file:
+    path: '{{ xray_clients_config.path }}'
+    state: directory
+    mode: '0700'
+
 - name: config | create client configuration
   delegate_to: localhost
+  become: false
   ansible.builtin.template:
     src: client.j2
     dest: '{{ xray_clients_config.path }}/{{ xray_server_config.name }}-{{ item.email }}.json'
-    mode: '0644'
+    mode: '0600'
     lstrip_blocks: true
   loop: '{{ xray_all_clients }}'
   loop_control:
@@ -120,4 +133,6 @@
   ansible.builtin.copy:
     content: '{{ xray_server_config.public_key }}'
     dest: '{{ xray_docker_config.path }}/public_key'
+    owner: root
+    group: root
     mode: '0644'

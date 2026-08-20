@@ -3,7 +3,7 @@
 alertmanager_docker_config:
   name: alertmanager
   image: prom/alertmanager
-  tag: v0.27.0
+  tag: '{{ alertmanager_version }}'
   path: '{{ docker_path }}/alertmanager'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'

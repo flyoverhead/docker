@@ -1,12 +1,15 @@
 ---
 
 # https://grafana.com/oss/grafana/
-# https://hub.docker.com/r/grafana/grafana-oss/tags
+# https://hub.docker.com/r/grafana/grafana/tags
+#
+# `grafana/grafana` is the OSS distribution. The `grafana/grafana-oss` mirror
+# stopped receiving tags after 13.0.2, so this role tracks `grafana/grafana`.
 
 grafana_docker_config:
   name: grafana
-  image: grafana/grafana-oss
-  tag: 10.4.12
+  image: grafana/grafana
+  tag: 13.1.4
   path: '{{ docker_path }}/grafana'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'
@@ -15,19 +18,23 @@ grafana_docker_config:
 grafana_service_config:
   listening_port: 3000
   admin_username: grafana
+  # override this -- the default is a placeholder, not a usable secret
   admin_password: grafana
+  # uid/gid of the `grafana` user the image runs as; the data volume has to be
+  # writable by it
+  uid: 472
 
 grafana_plugins:
   - grafana-clock-panel
-  - grafana-simple-json-datasource
 
+# https://grafana.com/grafana/dashboards/
 grafana_dashboards:
-  - dashboard_id: 1860
-    revision_id: 31
+  - dashboard_id: 1860 # Node Exporter Full
+    revision_id: 45
     name: node_exporter
 
 grafana_source:
   name: prometheus
   type: prometheus
   url: http://{{ ansible_host }}
-  port: 9090
+  port: '{{ prometheus_service_config.listening_port | default(9090) }}'

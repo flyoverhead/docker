@@ -1,18 +1,23 @@
 ---
 
-- name: config | disable avahi systemd unit
+# avahi-daemon owns port 5353 (mDNS) on a stock Debian desktop install and would
+# keep dnscrypt-proxy from binding it
+- name: config | disable avahi systemd units
   become: true
   ansible.builtin.systemd_service:
     name: '{{ item }}'
     state: stopped
     enabled: false
     masked: true
-  when:
-    - dnscrypt_service_config.listening_port == 5353
-    - '"avahi-daemon" in services'
   loop:
     - avahi-daemon.service
     - avahi-daemon.socket
+  when:
+    - dnscrypt_service_config.listening_port == 5353
+    # service_facts only reports `.service` units, so the socket is gated on the
+    # service being present -- they ship in the same package. Masking the socket
+    # matters: left alone it would activate avahi again on the first mDNS packet.
+    - '"avahi-daemon.service" in ansible_facts.services'
 
 - name: config | sysctl ipv6 support
   become: true
@@ -29,7 +34,10 @@
   ansible.builtin.template:
     src: dnscrypt-proxy.toml.j2
     dest: '{{ dnscrypt_docker_config.path }}/dnscrypt-proxy.toml'
+    owner: root
+    group: root
     mode: '0644'
+    backup: true
     lstrip_blocks: true
   notify:
     - dnscrypt | restart container

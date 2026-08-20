@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 ---
 
 services:
@@ -6,24 +7,34 @@ services:
     container_name: {{ pihole_docker_config.name }}
     restart: {{ pihole_docker_config.restart_policy }}
     environment:
-      - FTLCONF_LOCAL_IPV4={{ pihole_service_config.web_address }}
-      - WEB_PORT={{ pihole_service_config.web_port }}
-      - PIHOLE_DNS_={{ pihole_service_config.upstream_dns | join(';') }}
-      - DNSMASQ_LISTENING={{ pihole_service_config.dnsmasq_listening_address }}
-      - WEBPASSWORD={{ pihole_service_config.web_password }}
-      - DNSSEC={{ pihole_service_config.dnssec }}
-      - QUERY_LOGGING={{ pihole_service_config.query_logging }}
-      - DNS_BOGUS_PRIV={{ pihole_service_config.dns_bogus_priv }}
-      - DNS_FQDN_REQUIRED={{ pihole_service_config.dns_fqdn_required }}
-      - WEBTHEME={{ pihole_service_config.web_theme }}
-      - IPv6={{ pihole_service_config.ipv6_support }}
+      - FTLCONF_webserver_api_password={{ pihole_service_config.web_password }}
+      - FTLCONF_webserver_port={{ pihole_service_config.web_port }}
+      - FTLCONF_webserver_interface_theme={{ pihole_service_config.web_theme }}
+      - FTLCONF_dns_upstreams={{ pihole_service_config.upstream_dns | join(';') }}
+      - FTLCONF_dns_listeningMode={{ pihole_service_config.dns_listening_mode }}
+      - FTLCONF_dns_dnssec={{ pihole_service_config.dnssec | lower }}
+      - FTLCONF_dns_queryLogging={{ pihole_service_config.query_logging | lower }}
+      - FTLCONF_dns_bogusPriv={{ pihole_service_config.dns_bogus_priv | lower }}
+      - FTLCONF_dns_domainNeeded={{ pihole_service_config.dns_fqdn_required | lower }}
+{% if pihole_service_config.etc_dnsmasq_d %}
+      - FTLCONF_misc_etc_dnsmasq_d=true
+{% endif %}
       - TZ={{ pihole_docker_config.timezone }}
     volumes:
       - {{ pihole_docker_config.path }}/data:/etc/pihole
-      - {{ pihole_docker_config.path }}/dnsmasq.d/data:/etc/dnsmasq.d
+{% if pihole_service_config.etc_dnsmasq_d %}
+      - {{ pihole_docker_config.path }}/dnsmasq.d:/etc/dnsmasq.d
+{% endif %}
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-    network_mode: host
+{% if pihole_docker_config.network_mode == 'bridge' %}
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "{{ pihole_service_config.web_port }}:{{ pihole_service_config.web_port }}/tcp"
+{% endif %}
+    network_mode: {{ pihole_docker_config.network_mode }}
     cap_add:
       - NET_ADMIN
-      - CAP_CHOWN
+      - CHOWN
+      - SYS_NICE

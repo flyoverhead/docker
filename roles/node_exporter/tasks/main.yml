@@ -1,20 +1,47 @@
 ---
 
+# `apply` is required on every include below, not optional: tags on a dynamic
+# include_tasks decide only whether the include itself expands -- they are not
+# pushed onto the included tasks. The included files carry no tags of their own,
+# so without `apply` a tagged run would expand the include and then filter out
+# everything inside it, reporting ok=1 changed=0 while doing nothing at all.
+#
+# `apply.tags` therefore mirrors `tags` exactly: whichever tag selected the
+# include also matches the tasks that include pulled in.
 - name: detect
   ansible.builtin.include_tasks:
     file: detect.yml
+    apply:
+      tags:
+        - node_exporter.detect
+        - node_exporter.install
+        - node_exporter.update
+  tags:
+    - node_exporter.detect
+    - node_exporter.install
+    - node_exporter.update
 
 - name: install
   ansible.builtin.include_tasks:
     file: install.yml
+    apply:
+      tags:
+        - node_exporter.install
   when:
     - not node_exporter_container_exists
+  tags:
+    - node_exporter.install
 
 - name: update
   ansible.builtin.include_tasks:
     file: update.yml
+    apply:
+      tags:
+        - node_exporter.update
   when:
     - node_exporter_container_update
+  tags:
+    - node_exporter.update
 
 - name: handlers
   ansible.builtin.meta: flush_handlers

@@ -4,71 +4,90 @@
   become: true
   ansible.builtin.systemd_service:
     name: systemd-resolved
-    state: started
+    state: restarted
     enabled: true
     daemon_reload: true
 
 - name: pihole | start container
+  become: true
   community.docker.docker_compose_v2:
     project_src: '{{ pihole_docker_config.path }}'
     state: present
     wait: true
     wait_timeout: 60
 
-- name: pihole | restart container
+# An image or compose change needs `docker compose up` -- `restart` would keep
+# running the old image forever. `pull: always` makes a moving tag resolve too.
+- name: pihole | recreate container
   become: true
   community.docker.docker_compose_v2:
     project_src: '{{ pihole_docker_config.path }}'
-    state: restarted
+    state: present
+    pull: always
+    recreate: always
     wait: true
     wait_timeout: 60
 
+# gravity.db rows are managed with sqlite3 on the host rather than the pihole
+# CLI: the lists are declarative here, so every run has to be able to converge
+# the table to exactly what the *.list files hold.
+#
+# `type` values in `domainlist`: 0 exact allow, 1 exact deny, 2 regex allow,
+# 3 regex deny. The shipped list files contain regexes, hence 2 and 3.
 - name: pihole | clean domain blacklist
   become: true
   ansible.builtin.command:
-    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "DELETE FROM domainlist WHERE type='3'"
-  changed_when: True
+    cmd: sqlite3 {{ pihole_gravity_db }} "DELETE FROM domainlist WHERE type='3'"
+  changed_when: true
 
 - name: pihole | add domain blacklist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
+      sqlite3 {{ pihole_gravity_db }}
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (3, '{{ item }}', 1, '')"
-  loop: "{{ lookup('file', 'domain_black.list').splitlines() }}"
-  register: pihole_result
-  changed_when: True
-  failed_when: pihole_result.rc > 0 and pihole_result.rc != 19
+  loop: "{{ lookup('file', 'domain_black.list').splitlines() | select | list }}"
+  register: pihole_blacklist_result
+  changed_when: true
+  # 19 is SQLITE_CONSTRAINT -- the row is already there, which is not an error
+  failed_when: pihole_blacklist_result.rc > 0 and pihole_blacklist_result.rc != 19
 
 - name: pihole | clean domain whitelist
   become: true
   ansible.builtin.command:
-    cmd: sqlite3 {{ pihole_docker_config.path }}/data/gravity.db "DELETE FROM domainlist WHERE type='2'"
-  changed_when: True
+    cmd: sqlite3 {{ pihole_gravity_db }} "DELETE FROM domainlist WHERE type='2'"
+  changed_when: true
 
 - name: pihole | add domain whitelist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
+      sqlite3 {{ pihole_gravity_db }}
       "INSERT INTO domainlist (type, domain, enabled, comment) VALUES (2, '{{ item }}', 1, '')"
-  loop: "{{ lookup('file', 'domain_white.list').splitlines() }}"
-  register: pihole_result
-  changed_when: True
-  failed_when: pihole_result.rc > 0 and pihole_result.rc != 19
+  loop: "{{ lookup('file', 'domain_white.list').splitlines() | select | list }}"
+  register: pihole_whitelist_result
+  changed_when: true
+  failed_when: pihole_whitelist_result.rc > 0 and pihole_whitelist_result.rc != 19
 
 - name: pihole | add adlist
   become: true
   ansible.builtin.command:
     cmd: >-
-      sqlite3 {{ pihole_docker_config.path }}/data/gravity.db
+      sqlite3 {{ pihole_gravity_db }}
       "INSERT INTO adlist (address, enabled, comment) VALUES ('{{ item }}', 1, '')"
-  loop: "{{ lookup('file', 'adlist.list').splitlines() }}"
-  register: pihole_result
-  changed_when: True
-  failed_when: pihole_result.rc > 0 and pihole_result.rc != 19
+  loop: "{{ lookup('file', 'adlist.list').splitlines() | select | list }}"
+  register: pihole_adlist_result
+  changed_when: true
+  failed_when: pihole_adlist_result.rc > 0 and pihole_adlist_result.rc != 19
 
-- name: pihole | update gravity
+- name: pihole | reload lists
+  become: true
   community.docker.docker_container_exec:
     container: '{{ pihole_docker_config.name }}'
-    command: /bin/sh -c "pihole -g"
+    command: pihole reloadlists
+
+- name: pihole | update gravity
+  become: true
+  community.docker.docker_container_exec:
+    container: '{{ pihole_docker_config.name }}'
+    command: pihole -g

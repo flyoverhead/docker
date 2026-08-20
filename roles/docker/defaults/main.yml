@@ -1,21 +1,34 @@
 ---
 
+# https://docs.docker.com/engine/
+# https://docs.docker.com/engine/install/debian/
+
 docker_network_mode: host
 docker_path: /opt/docker
 docker_repo:
   key: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
   url: https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} stable
   packages:
-    - docker-ce
-    - docker-ce-cli
     - containerd.io
     - docker-buildx-plugin
+    - docker-ce
+    - docker-ce-cli
     - docker-compose-plugin
   requirements:
     - apt-transport-https
     - ca-certificates
     - gnupg
+    # required by the community.docker modules used across this collection
+    - python3-requests
 docker_restart_policy: always
 docker_timezone: Europe/Moscow
 docker_users:
   - '{{ ansible_user }}'
+
+# rendered to /etc/docker/daemon.json, merged over nothing -- the whole file is
+# managed by this role, so extend this mapping rather than editing the host file
+docker_daemon_config:
+  log-driver: json-file
+  log-opts:
+    max-file: '3'
+    max-size: 10m

@@ -5,13 +5,30 @@
   ansible.builtin.file:
     path: '{{ xray_docker_config.path }}'
     state: directory
+    owner: root
+    group: root
     mode: '0755'
+
+# config.json is bind-mounted as a file. Docker creates a *directory* at a
+# missing bind source, which would make the container fail to start, so the file
+# has to exist before the compose file can be brought up by hand.
+- name: install | config.json placeholder
+  become: true
+  ansible.builtin.copy:
+    content: '{}'
+    dest: '{{ xray_docker_config.path }}/config.json'
+    owner: root
+    group: root
+    mode: '0600'
+    force: false
 
 - name: install | docker-compose file
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: '{{ xray_docker_config.path }}/docker-compose.yml'
+    owner: root
+    group: root
     mode: '0644'
     lstrip_blocks: true
   notify:

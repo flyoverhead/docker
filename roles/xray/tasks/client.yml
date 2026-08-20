@@ -1,5 +1,9 @@
 ---
 
+# Reset first: set_fact is host-scoped and survives loop iterations, so without
+# this a client that carries its own id/shortId (and therefore skips the block
+# below) would inherit the credentials generated for a previous client --
+# handing two clients the same UUID.
 - name: client | reset generated secrets
   ansible.builtin.set_fact:
     xray_generated_client_uuid: ''
@@ -27,6 +31,7 @@
         xray_generated_client_uuid: '{{ xray_client_uuid_output.container.Output | trim }}'
 
     - name: client | generate short id
+      become: true
       community.docker.docker_container:
         name: '{{ xray_docker_config.name }}-runtime'
         image: '{{ xray_docker_config.image }}:{{ xray_docker_config.tag }}'
@@ -55,4 +60,5 @@
   ansible.builtin.set_fact:
     xray_add_clients: >-
       {{ xray_add_clients | default([]) +
-      [{'email': item.email, 'id': xray_client_uuid, 'shortId': xray_client_short_id}] }}
+      [item | combine({'id': xray_client_uuid,
+      'shortId': xray_client_short_id})] }}

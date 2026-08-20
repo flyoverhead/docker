@@ -3,21 +3,22 @@
 - name: install | clean unofficial packages
   become: true
   ansible.builtin.apt:
-    name: '{{ item }}'
+    name:
+      - docker-compose
+      - docker-doc
+      - docker.io
+      - podman-docker
     state: absent
     autoremove: true
     purge: true
-  loop:
-    - docker.io
-    - docker-compose
-    - docker-doc
-    - podman-docker
 
 - name: install | keyrings directory
   become: true
   ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
+    owner: root
+    group: root
     mode: '0755'
 
 - name: install | dependencies
@@ -33,7 +34,13 @@
   ansible.builtin.get_url:
     url: '{{ docker_repo.key }}'
     dest: /etc/apt/keyrings/docker
+    owner: root
+    group: root
     mode: '0644'
+  register: docker_key_download
+  until: docker_key_download is succeeded
+  retries: 3
+  delay: 5
 
 - name: install | repository
   become: true
@@ -50,3 +57,5 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  notify:
+    - docker | start service
