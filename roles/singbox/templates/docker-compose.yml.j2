@@ -23,3 +23,15 @@ services:
     cap_add:
       - NET_ADMIN
     command: -D /var/lib/sing-box -C /etc/sing-box/ run
+{% if singbox_restarter.enabled %}
+  restarter:
+    image: {{ singbox_restarter.image }}
+    container_name: {{ singbox_docker_config.name }}-restarter
+    restart: {{ singbox_docker_config.restart_policy }}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - /bin/sh
+      - -c
+      - while true; do sleep {{ singbox_restarter.interval }}; docker restart {{ singbox_docker_config.name }}; done
+{% endif %}

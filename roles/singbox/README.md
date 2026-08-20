@@ -13,6 +13,7 @@ configured client on the controller.
 | `singbox_server_config` | Server configuration | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `singbox_clients_config` | Clients configuration | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `singbox_client_inbounds` | Per-client `inbounds` override, keyed by client name | `Example below` |
+| `singbox_restarter` | Periodic restart sidecar | `Example below` |
 | `singbox_tuning_config` | Server kernel optimization parameters | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `singbox_force_update_secrets` | Force regeneration of server keys and client secrets | `false` |
 
@@ -146,6 +147,24 @@ singbox_client_inbounds:
 
 A client listed here gets these inbounds in its profile instead of
 `singbox_clients_config.inbounds`.
+
+## Periodic restart sidecar
+
+The compose project includes a `restarter` sidecar that restarts the sing-box
+container every `singbox_restarter.interval` seconds. It is enabled by default,
+matching the deployed behaviour.
+
+```yaml
+singbox_restarter:
+  enabled: true
+  image: docker:cli
+  interval: 3600
+```
+
+It bind-mounts `/var/run/docker.sock`, which gives that container
+root-equivalent access to the host. A systemd timer running
+`docker restart sing-box` achieves the same thing without exposing the socket.
+Set `enabled: false` if you do not need the periodic restart.
 
 ## Predefined secrets
 

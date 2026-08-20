@@ -225,6 +225,17 @@ singbox_client_inbounds: {}
   #     listen: 127.0.0.1
   #     listen_port: 2080
 
+# Sidecar that restarts the sing-box container on a fixed interval. Kept enabled
+# so the deployed behaviour matches what shipped, but note what it costs: it
+# bind-mounts the docker socket, which gives that container root-equivalent
+# access to the whole host. A systemd timer on the host running
+# `docker restart sing-box` is the same effect without the socket. Set
+# `enabled: false` if you do not need the periodic restart.
+singbox_restarter:
+  enabled: true
+  image: docker:cli
+  interval: 3600
+
 singbox_tuning_config:
   enabled: false
   fs.file-max: 51200
