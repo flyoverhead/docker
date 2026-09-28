@@ -1,0 +1,35 @@
+---
+
+- name: docker
+  hosts: vps
+  ignore_unreachable: true
+  become: true
+
+  roles:
+
+    - role: flyoverhead.docker.docker
+      tags:
+        - docker
+
+    - role: flyoverhead.docker.node_exporter
+      tags:
+        - node_exporter
+
+    - role: flyoverhead.docker.prometheus
+      tags:
+        - prometheus
+
+    - role: flyoverhead.docker.alertmanager
+      tags:
+        - alertmanager
+
+- name: xray
+  hosts: xray
+  ignore_unreachable: true
+  become: true
+
+  roles:
+
+    - role: flyoverhead.docker.xray
+      tags:
+        - xray

@@ -1,0 +1,16 @@
+---
+
+ansible_port: 2222
+ansible_user: deploy
+
+docker_network_mode: host
+docker_path: /opt/docker
+docker_restart_policy: always
+docker_timezone: Europe/Moscow
+docker_users:
+  - '{{ ansible_user }}'
+
+xray_version: 26.9.9
+
+telegram_bot_token: '{{ vault_telegram_bot_token }}'
+telegram_chat_id: '{{ vault_telegram_chat_id }}'

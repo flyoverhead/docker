@@ -1,0 +1,16 @@
+---
+
+prometheus_docker_config:
+  name: prometheus
+  image: prom/prometheus
+  tag: v3.14.0
+  path: '{{ docker_path }}/prometheus'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+prometheus_service_config:
+  listening_address: 127.0.0.1
+  listening_port: 9090
+  retention_time: 30d
+  uid: 65534

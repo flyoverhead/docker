@@ -1,0 +1,14 @@
+---
+
+node_exporter_docker_config:
+  name: node-exporter
+  image: prom/node-exporter
+  tag: v1.12.1
+  path: '{{ docker_path }}/node-exporter'
+  restart_policy: '{{ docker_restart_policy }}'
+  network_mode: '{{ docker_network_mode }}'
+  timezone: '{{ docker_timezone }}'
+
+node_exporter_service_config:
+  listening_address: 127.0.0.1
+  listening_port: 9100

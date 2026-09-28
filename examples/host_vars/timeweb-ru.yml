@@ -1,0 +1,373 @@
+---
+
+ansible_host: 192.0.2.10
+ansible_hostname: timeweb-ru
+
+xray_vless_address: www.example.com
+
+xray_server_tag: in-ru
+
+xray_flow: ''
+
+xray_stream_settings:
+  network: xhttp
+  security: reality
+  xhttpSettings:
+    path: '{{ xray_xhttp_path }}'
+    xPaddingBytes: 100-1000
+  sockopt:
+    trustedXForwardedFor:
+      - 127.0.0.1/32
+
+xray_dns:
+  servers:
+    - tag: dns-corp
+      address: 10.0.0.53
+      domains:
+        - domain:corp.example
+        - domain:corp-registry.example
+      finalQuery: true
+      skipFallback: true
+    - tag: dns-ru
+      address: https://77.88.8.8/dns-query
+      domains:
+        - geosite:category-gov-ru
+        - geosite:category-ru
+        - regexp:\.ru$
+    - tag: dns-nl
+      address: https://1.1.1.1/dns-query
+      domains: &nl_domains
+        - 4pda.to
+        - graph.org
+        - ntc.party
+        - domain:nest.com
+        - domain:nestlabs.com
+        - domain:switch-bot.com
+        - regexp:.*android.*
+        - regexp:.*anthropic.*
+        - regexp:.*aqara.*
+        - regexp:.*brave.*
+        - regexp:.*claude.*
+        - regexp:.*facebook.*
+        - regexp:(^|\.)g\.co(\.|$)
+        - regexp:(^|\.)gem(\.|$)
+        - regexp:.*gemini.*
+        - regexp:(^|\.)goo\.gl(\.|$)
+        - regexp:.*ggpht.*
+        - regexp:.*google.*
+        - regexp:.*philips.*
+        - regexp:.*switchbot.*
+        - regexp:.*tuya.*
+        - regexp:.*yeelight.*
+        - geosite:amazon
+        - geosite:anthropic
+        - geosite:apple
+        - geosite:booking
+        - geosite:category-ai-!cn
+        - geosite:category-anticensorship
+        - geosite:category-communication
+        - geosite:category-companies
+        - geosite:category-cryptocurrency
+        - geosite:category-ecommerce
+        - geosite:category-dev
+        - geosite:category-entertainment
+        - geosite:category-media
+        - geosite:category-social-media-!cn
+        - geosite:category-speedtest
+        - geosite:discord
+        - geosite:facebook
+        - geosite:google
+        - geosite:google-deepmind
+        - geosite:google-gemini
+        - geosite:google-play
+        - geosite:google-registry
+        - geosite:google-trust-services
+        - geosite:linkedin
+        - geosite:messenger
+        - geosite:meta
+        - geosite:telegram
+        - geosite:whatsapp
+        - geosite:xiaomi
+    - tag: dns-direct
+      address: https://94.140.14.14/dns-query
+  queryStrategy: UseIP
+  disableFallbackIfMatch: true
+
+xray_outbounds:
+  - tag: out-corp
+    protocol: wireguard
+    settings:
+      address:
+        - '{{ vault_corp_wireguard.address }}'
+      secretKey: '{{ vault_corp_wireguard.secret_key }}'
+      peers:
+        - endpoint: '{{ vault_corp_wireguard.endpoint }}'
+          publicKey: '{{ vault_corp_wireguard.public_key }}'
+          allowedIPs:
+            - 10.0.0.0/8
+          keepAlive: 5
+  - tag: out-corp-dial
+    protocol: freedom
+    settings:
+      domainStrategy: ForceIPv4
+      finalRules:
+        - action: allow
+          ip:
+            - 10.0.0.0/8
+    streamSettings:
+      sockopt:
+        domainStrategy: ForceIPv4
+        dialerProxy: out-corp
+  - tag: out-nl
+    protocol: vless
+    settings:
+      vnext:
+        - address: 192.0.2.20
+          port: 443
+          users:
+            - email: timeweb
+              id: '{{ vault_xray_exit_clients.timeweb.id }}'
+              encryption: none
+    streamSettings:
+      network: xhttp
+      security: reality
+      realitySettings:
+        fingerprint: chrome
+        serverName: www.example.nl
+        publicKey: '{{ vault_xray_reality_keys["vdsina-nl"].public_key }}'
+        shortId: '{{ vault_xray_exit_clients.timeweb.shortId }}'
+      xhttpSettings:
+        path: '{{ xray_xhttp_path }}'
+        mode: auto
+        xPaddingBytes: 100-1000
+        xmux:
+          maxConcurrency: 16-32
+          hMaxRequestTimes: 600-900
+          hMaxReusableSecs: 1800-3000
+  - tag: out-direct
+    protocol: freedom
+    settings:
+      domainStrategy: AsIs
+  - tag: out-block
+    protocol: blackhole
+    settings: {}
+  - tag: dns-out
+    protocol: dns
+    settings: {}
+
+xray_routing:
+  domainStrategy: IPOnDemand
+  rules:
+    - inboundTag:
+        - in-ru
+      port: 53
+      network: tcp,udp
+      outboundTag: dns-out
+      type: field
+    - domain:
+        - geosite:category-ads-all
+        - regexp:(^|\.)ads?(\.|$)
+        - regexp:(^|\.)metrics?(\.|$)
+        - regexp:(^|\.)metrika?(\.|$)
+      outboundTag: out-block
+      type: field
+    - ip:
+        - 10.0.0.0/8
+      outboundTag: out-corp-dial
+      type: field
+    - domain:
+        - domain:corp.example
+        - domain:corp-registry.example
+      outboundTag: out-corp-dial
+      type: field
+    - ip:
+        - geoip:ru
+      outboundTag: out-direct
+      type: field
+    - domain:
+        - regexp:\.ru$
+        - geosite:category-gov-ru
+        - geosite:category-ru
+      outboundTag: out-direct
+      type: field
+    - network: udp
+      port: 443
+      outboundTag: out-block
+      type: field
+    - domain: *nl_domains
+      outboundTag: out-nl
+      type: field
+    - ip:
+        - 57.144.0.0/16
+        - 157.240.0.0/16
+        - 5.28.192.0/21
+        - 5.28.248.0/21
+        - 91.105.192.0/23
+        - 91.108.4.0/22
+        - 91.108.8.0/20
+        - 91.108.36.0/22
+        - 91.108.56.0/22
+        - 95.161.64.0/20
+        - 149.154.160.0/20
+        - 185.76.151.0/24
+      outboundTag: out-nl
+      type: field
+    - domain:
+        - geosite:private
+      outboundTag: out-direct
+      type: field
+    - ip:
+        - geoip:private
+      outboundTag: out-direct
+      type: field
+    - network: tcp,udp
+      outboundTag: out-direct
+      type: field
+
+xray_client_inbounds:
+  router:
+    - tag: tproxy-in
+      protocol: dokodemo-door
+      listen: 0.0.0.0
+      port: 7895
+      settings:
+        network: tcp,udp
+        followRedirect: true
+      streamSettings:
+        sockopt:
+          tproxy: tproxy
+      sniffing:
+        enabled: true
+        destOverride:
+          - http
+          - tls
+          - quic
+        routeOnly: true
+
+xray_clients_config:
+  path: '{{ inventory_dir }}/files/clients'
+  clients:
+    - email: macbook
+      id: '{{ vault_xray_clients.macbook.id }}'
+      shortId: '{{ vault_xray_clients.macbook.shortId }}'
+    - email: router
+      id: '{{ vault_xray_clients.router.id }}'
+      shortId: '{{ vault_xray_clients.router.shortId }}'
+    - email: iphone
+    - email: ipad
+    - email: android
+    - email: windows-pc
+  dns:
+    servers:
+      - address: 1.1.1.1
+      - address: 94.140.14.14
+    queryStrategy: UseIP
+  inbounds:
+    - tag: socks-in
+      protocol: socks
+      listen: 127.0.0.1
+      port: 10808
+      settings:
+        udp: true
+      sniffing:
+        enabled: true
+        destOverride:
+          - fakedns
+          - http
+          - tls
+          - quic
+        routeOnly: false
+    - tag: http-in
+      protocol: http
+      listen: 127.0.0.1
+      port: 10809
+      settings: {}
+      sniffing:
+        enabled: true
+        destOverride:
+          - fakedns
+          - http
+          - tls
+          - quic
+        routeOnly: false
+  outbounds:
+    - tag: out-ru
+      protocol: vless
+      settings:
+        vnext:
+          - address: '{{ ansible_host }}'
+            port: '{{ xray_listening_port }}'
+            users:
+              - email: '{{ item.email | default("") }}'
+                id: '{{ item.id | default("") }}'
+                encryption: none
+      streamSettings:
+        network: xhttp
+        security: reality
+        xhttpSettings:
+          path: '{{ xray_xhttp_path }}'
+          mode: auto
+          xPaddingBytes: 100-1000
+          xmux:
+            maxConcurrency: 16-32
+            hMaxRequestTimes: 600-900
+            hMaxReusableSecs: 1800-3000
+        realitySettings:
+          fingerprint: chrome
+          serverName: '{{ xray_server_config.vless_address | default("") }}'
+          publicKey: '{{ xray_server_config.public_key | default("") }}'
+          shortId: '{{ item.shortId | default("") }}'
+    - tag: out-direct
+      protocol: freedom
+      settings:
+        domainStrategy: AsIs
+    - tag: out-block
+      protocol: blackhole
+      settings: {}
+  routing:
+    domainStrategy: IPOnDemand
+    rules:
+      - port: 53
+        network: tcp,udp
+        outboundTag: out-ru
+        type: field
+      - domain:
+          - geosite:category-ads-all
+          - regexp:(^|\.)ads?(\.|$)
+          - regexp:(^|\.)metrics?(\.|$)
+          - regexp:(^|\.)metrika?(\.|$)
+        outboundTag: out-block
+        type: field
+      - domain:
+          - domain:corp.example
+          - domain:corp-registry.example
+        outboundTag: out-ru
+        type: field
+      - inboundTag:
+          - tproxy-in
+        ip:
+          - 10.0.0.0/8
+        outboundTag: out-ru
+        type: field
+      - ip:
+          - geoip:ru
+        outboundTag: out-direct
+        type: field
+      - domain:
+          - geosite:category-gov-ru
+          - geosite:category-ru
+        outboundTag: out-direct
+        type: field
+      - domain:
+          - geosite:private
+        outboundTag: out-direct
+        type: field
+      - ip:
+          - geoip:private
+        outboundTag: out-direct
+        type: field
+      - network: tcp,udp
+        outboundTag: out-ru
+        type: field
+  log:
+    loglevel: error

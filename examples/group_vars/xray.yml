@@ -1,0 +1,46 @@
+---
+
+xray_docker_config:
+  name: xray
+  image: teddysun/xray
+  tag: '{{ xray_version }}'
+  path: '{{ docker_path }}/xray'
+  restart_policy: always
+  network_mode: host
+  timezone: Europe/Moscow
+
+xray_listening_port: 443
+xray_target_port: 443
+xray_dns_port: 53
+xray_xhttp_path: /change-me
+
+xray_log_level: error
+
+xray_private_key: '{{ vault_xray_reality_keys[inventory_hostname].private_key }}'
+xray_public_key: '{{ vault_xray_reality_keys[inventory_hostname].public_key }}'
+
+xray_server_config:
+  name: '{{ inventory_hostname }}'
+  tag: '{{ xray_server_tag }}'
+  listening_address: 0.0.0.0
+  listening_port: '{{ xray_listening_port }}'
+  target_port: '{{ xray_target_port }}'
+  dns_port: '{{ xray_dns_port }}'
+  public_address: '{{ ansible_host }}'
+  vless_address: '{{ xray_vless_address }}'
+  dns: '{{ xray_dns | default({}) }}'
+  outbounds: '{{ xray_outbounds | default([]) }}'
+  routing: '{{ xray_routing | default([]) }}'
+  flow: '{{ xray_flow | default("xtls-rprx-vision") }}'
+  stream_settings: '{{ xray_stream_settings | default({"network": "tcp", "security": "reality"}) }}'
+  log:
+    loglevel: '{{ xray_log_level }}'
+  private_key: '{{ xray_private_key | default("") }}'
+  public_key: '{{ xray_public_key | default("") }}'
+
+systemd_xray_firewalld:
+  - name: xray-https
+    port: '{{ xray_listening_port }}/tcp'
+    zone: public
+    state: enabled
+    permanent: true

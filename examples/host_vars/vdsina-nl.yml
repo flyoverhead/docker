@@ -1,0 +1,79 @@
+---
+
+ansible_host: 192.0.2.20
+ansible_hostname: vdsina-nl
+
+xray_vless_address: www.example.nl
+
+xray_server_tag: in-nl
+
+xray_flow: ''
+
+xray_stream_settings:
+  network: xhttp
+  security: reality
+  xhttpSettings:
+    path: '{{ xray_xhttp_path }}'
+    xPaddingBytes: 100-1000
+  sockopt:
+    trustedXForwardedFor:
+      - 127.0.0.1/32
+
+xray_outbounds:
+  - tag: out-direct
+    protocol: freedom
+    settings:
+      domainStrategy: AsIs
+  - tag: out-block
+    protocol: blackhole
+    settings: {}
+
+xray_routing:
+  domainStrategy: IPOnDemand
+  rules:
+    - network: tcp,udp
+      outboundTag: out-direct
+      type: field
+
+xray_clients_config:
+  path: '{{ inventory_dir }}/files/clients'
+  clients:
+    - email: timeweb
+      id: '{{ vault_xray_exit_clients.timeweb.id }}'
+      shortId: '{{ vault_xray_exit_clients.timeweb.shortId }}'
+  outbounds:
+    - tag: out-nl
+      protocol: vless
+      settings:
+        vnext:
+          - address: '{{ ansible_host }}'
+            port: '{{ xray_listening_port }}'
+            users:
+              - email: '{{ item.email | default("") }}'
+                id: '{{ item.id | default("") }}'
+                encryption: none
+      streamSettings:
+        network: xhttp
+        security: reality
+        xhttpSettings:
+          path: '{{ xray_xhttp_path }}'
+          mode: auto
+          xPaddingBytes: 100-1000
+          xmux:
+            maxConcurrency: 16-32
+            hMaxRequestTimes: 600-900
+            hMaxReusableSecs: 1800-3000
+        realitySettings:
+          fingerprint: chrome
+          serverName: '{{ xray_server_config.vless_address | default("") }}'
+          publicKey: '{{ xray_server_config.public_key | default("") }}'
+          shortId: '{{ item.shortId | default("") }}'
+      proxySettings:
+        tag: out-ru
+        transportLayer: true
+    - tag: out-direct
+      protocol: freedom
+    - tag: out-block
+      protocol: blackhole
+  log:
+    loglevel: error

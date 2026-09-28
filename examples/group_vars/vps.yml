@@ -1,0 +1,33 @@
+---
+
+prometheus_scrape_jobs:
+  - job_name: alertmanager
+    scrape_interval: 1m
+    static_configs:
+      - targets:
+          - '{{ alertmanager_service_config.listening_address }}:{{ alertmanager_service_config.listening_port }}'
+        labels:
+          instance: '{{ inventory_hostname }}'
+  - job_name: node-exporter
+    scrape_interval: 1m
+    static_configs:
+      - targets:
+          - '{{ node_exporter_service_config.listening_address }}:{{ node_exporter_service_config.listening_port }}'
+        labels:
+          instance: '{{ inventory_hostname }}'
+  - job_name: prometheus
+    scrape_interval: 1m
+    static_configs:
+      - targets:
+          - '{{ prometheus_service_config.listening_address }}:{{ prometheus_service_config.listening_port }}'
+        labels:
+          instance: '{{ inventory_hostname }}'
+
+prometheus_alert_jobs:
+  - static_configs:
+      - targets:
+          - '{{ alertmanager_service_config.listening_address }}:{{ alertmanager_service_config.listening_port }}'
+        labels:
+          instance: '{{ inventory_hostname }}'
+
+xray_geofiles_destination: '{{ xray_docker_config.path }}/data'
