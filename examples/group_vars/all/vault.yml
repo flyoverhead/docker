@@ -1,0 +1,31 @@
+---
+
+vault_telegram_bot_token: CHANGE_ME
+vault_telegram_chat_id: CHANGE_ME
+
+vault_xray_reality_keys:
+  timeweb-ru:
+    private_key: CHANGE_ME
+    public_key: CHANGE_ME
+  vdsina-nl:
+    private_key: CHANGE_ME
+    public_key: CHANGE_ME
+
+vault_xray_clients:
+  macbook:
+    id: CHANGE_ME
+    shortId: CHANGE_ME
+  router:
+    id: CHANGE_ME
+    shortId: CHANGE_ME
+
+vault_xray_exit_clients:
+  timeweb:
+    id: CHANGE_ME
+    shortId: CHANGE_ME
+
+vault_corp_wireguard:
+  address: 10.255.0.2/32
+  secret_key: CHANGE_ME
+  endpoint: 198.51.100.20:51820
+  public_key: CHANGE_ME
