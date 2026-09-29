@@ -2,6 +2,22 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.0.3
+
+### Fixed
+
+- **xray**: a tag-limited run could never change the xray image. The `update`
+  include passed its tags without an `apply:` block, so `update | docker-compose
+  file` was filtered out, `docker-compose.yml` kept its old `image:` line, and
+  the restart handlers brought back the same image while the play reported
+  success. `update` now applies `xray.docker` to its tasks, as `install` and
+  `config` already did.
+
+### Added
+
+- `examples/`: a sanitized inventory and playbook based on a working
+  deployment.
+
 ## 2.0.2
 
 ### Changed
