@@ -2,6 +2,23 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.1.3
+
+### Fixed
+
+- **all compose roles**: a `--check` run of a first deployment failed at the
+  container handlers, because `docker_compose_v2` needs the project folder that
+  a check run never creates (dnscrypt had this fixed in 2.1.2). Every
+  `docker_compose_v2` handler now skips in check mode while the role's
+  `<role>_container_exists` fact is false. An undefined fact (a tag-limited run
+  that skipped `detect`) keeps the old behaviour, and the handler runs.
+- **all compose roles**: `/etc/timezone` is no longer bind-mounted. Debian 13
+  does not ship the file, so Docker created an empty directory on the host and
+  mounted that. `TZ` and `/etc/localtime` already carry the zone. Most roles
+  render the compose file only on install or image update, so this takes
+  effect then. dnscrypt also renders it in `config`, so its next run recreates
+  the container.
+
 ## 2.1.2
 
 ### Fixed
