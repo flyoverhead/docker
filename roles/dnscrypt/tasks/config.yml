@@ -29,6 +29,8 @@
     mode: '0644'
   when:
     - dnscrypt_service_config.blocked_names_url | default('') | length > 0
+    # a check run never creates the service folder that get_url writes into
+    - not (ansible_check_mode and not dnscrypt_container_exists)
 
 # cp keeps the bind-mounted inode; SIGHUP because the proxy's directory watcher never sees a single-file mount
 - name: config | dnscrypt blocklist refresh job
