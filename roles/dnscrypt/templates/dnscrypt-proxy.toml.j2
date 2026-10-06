@@ -153,10 +153,6 @@ blocked_query_response = '{{ dnscrypt_service_config.blocked_query_response }}'
 # blocked_query_response = 'refused'
 {% endif %}
 
-{% if dnscrypt_service_config.blocked_names_url | default('') | length > 0 %}
-enable_hot_reload = true
-{% endif %}
-
 
 ## Load-balancing strategy: 'p2' (default), 'ph', 'p<n>', 'first' or 'random'
 ## Randomly choose 1 of the fastest 2, half, n, 1 or all live servers by latency.
