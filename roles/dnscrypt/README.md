@@ -32,7 +32,7 @@ renders as before.
 | :--- | :--- | :--- |
 | `anonymized_routes` | `*` via `anon-cs-nl`, `anon-cs-nl2`, `anon-meganerd`, `anon-serbica` | `[anonymized_dns] routes`; `via: ['*']` lets the proxy pick relays |
 | `skip_incompatible` | `false` | Skip servers that cannot be reached through a relay instead of using them directly |
-| `blocked_names_url` | `''` | Blocklist URL; downloaded by the role, refreshed weekly by cron, hot-reloaded |
+| `blocked_names_url` | `''` | Blocklist URL; downloaded by the role, refreshed weekly by cron, which reloads the proxy with SIGHUP |
 | `blocked_query_response` | `''` (upstream `hinfo`) | e.g. `a:0.0.0.0,aaaa:::` |
 | `cache_min_ttl` | `2400` | Minimum cache TTL, seconds |
 | `cache_max_ttl` | `86400` | Maximum cache TTL, seconds |

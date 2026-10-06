@@ -30,7 +30,7 @@
   when:
     - dnscrypt_service_config.blocked_names_url | default('') | length > 0
 
-# cp, not mv: the file is bind-mounted and hot-reloaded, both of which follow the inode
+# cp keeps the bind-mounted inode; SIGHUP because the proxy's directory watcher never sees a single-file mount
 - name: config | dnscrypt blocklist refresh job
   become: true
   ansible.builtin.cron:
@@ -42,9 +42,11 @@
       '{{ dnscrypt_service_config.blocked_names_url | default('') }}'
       && test -s {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
       && cp {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
-      {{ dnscrypt_docker_config.path }}/blocked-names.txt;
+      {{ dnscrypt_docker_config.path }}/blocked-names.txt
+      && docker kill --signal HUP {{ dnscrypt_docker_config.name }};
       rm -f {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
-    state: "{{ 'present' if dnscrypt_service_config.blocked_names_url | default('') | length > 0 else 'absent' }}"
+  when:
+    - dnscrypt_service_config.blocked_names_url | default('') | length > 0
 
 - name: config | dnscrypt docker-compose file
   become: true
