@@ -2,6 +2,15 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.1.2
+
+### Fixed
+
+- **dnscrypt**: a `--check` run of a first deployment with `blocked_names_url`
+  set failed at the blocklist download, because a check run never creates the
+  service folder. The download and the container handlers are now skipped in
+  check mode until the container exists.
+
 ## 2.1.1
 
 ### Fixed
