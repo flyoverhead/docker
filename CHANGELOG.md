@@ -2,6 +2,21 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.1.0
+
+### Added
+
+- **dnscrypt**: `anonymized_routes` and `skip_incompatible` (the four relays
+  previously hardcoded are the default), `blocked_names_url` with a weekly
+  refresh job, `blocked_query_response`, `cache_min_ttl`/`cache_max_ttl`.
+  The compose file is now also rendered in `config`, so enabling the
+  blocklist on an existing container recreates it with the new mount.
+
+### Removed
+
+- **dnscrypt**: the host-wide IPv6 sysctl toggle. Hosts keep whatever value
+  the role last set.
+
 ## 2.0.3
 
 ### Fixed

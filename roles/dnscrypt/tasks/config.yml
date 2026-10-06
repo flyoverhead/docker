@@ -19,15 +19,44 @@
     # matters: left alone it would activate avahi again on the first mDNS packet.
     - '"avahi-daemon.service" in ansible_facts.services'
 
-- name: config | sysctl ipv6 support
+- name: config | dnscrypt blocklist
   become: true
-  ansible.posix.sysctl:
-    name: '{{ item }}'
-    value: '{{ 0 if dnscrypt_service_config.ipv6_servers else 1 }}'
-    sysctl_set: true
-  loop: '{{ dnscrypt_sysctl_config_ipv6 }}'
-  loop_control:
-    label: '{{ item }} value set to {{ 0 if dnscrypt_service_config.ipv6_servers else 1 }}'
+  ansible.builtin.get_url:
+    url: '{{ dnscrypt_service_config.blocked_names_url }}'
+    dest: '{{ dnscrypt_docker_config.path }}/blocked-names.txt'
+    owner: root
+    group: root
+    mode: '0644'
+  when:
+    - dnscrypt_service_config.blocked_names_url | default('') | length > 0
+
+# cp, not mv: the file is bind-mounted and hot-reloaded, both of which follow the inode
+- name: config | dnscrypt blocklist refresh job
+  become: true
+  ansible.builtin.cron:
+    name: dnscrypt blocklist refresh
+    user: root
+    special_time: weekly
+    job: >-
+      curl -fsSL -o {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
+      '{{ dnscrypt_service_config.blocked_names_url | default('') }}'
+      && test -s {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
+      && cp {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
+      {{ dnscrypt_docker_config.path }}/blocked-names.txt;
+      rm -f {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
+    state: "{{ 'present' if dnscrypt_service_config.blocked_names_url | default('') | length > 0 else 'absent' }}"
+
+- name: config | dnscrypt docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ dnscrypt_docker_config.path }}/docker-compose.yml'
+    owner: root
+    group: root
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - dnscrypt | recreate container
 
 - name: config | dnscrypt configuration file
   become: true

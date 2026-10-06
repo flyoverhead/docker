@@ -147,7 +147,15 @@ keepalive = 30
 ## Using the `hinfo` option means that some responses will be lies.
 ## Unfortunately, the `hinfo` option appears to be required for Android 8+
 
+{% if dnscrypt_service_config.blocked_query_response | default('') | length > 0 %}
+blocked_query_response = '{{ dnscrypt_service_config.blocked_query_response }}'
+{% else %}
 # blocked_query_response = 'refused'
+{% endif %}
+
+{% if dnscrypt_service_config.blocked_names_url | default('') | length > 0 %}
+enable_hot_reload = true
+{% endif %}
 
 
 ## Load-balancing strategy: 'p2' (default), 'ph', 'p<n>', 'first' or 'random'
@@ -400,12 +408,12 @@ cache_size = {{ dnscrypt_service_config.dns_cache_size }}
 
 ## Minimum TTL for cached entries
 
-cache_min_ttl = 2400
+cache_min_ttl = {{ dnscrypt_service_config.cache_min_ttl | default(2400) }}
 
 
 ## Maximum TTL for cached entries
 
-cache_max_ttl = 86400
+cache_max_ttl = {{ dnscrypt_service_config.cache_max_ttl | default(86400) }}
 
 
 ## Minimum TTL for negatively cached entries
@@ -531,7 +539,11 @@ format = 'tsv'
 
 ## Path to the file of blocking rules (absolute, or relative to the same directory as the config file)
 
+{% if dnscrypt_service_config.blocked_names_url | default('') | length > 0 %}
+blocked_names_file = 'blocked-names.txt'
+{% else %}
 # blocked_names_file = 'blocked-names.txt'
+{% endif %}
 
 
 ## Optional path to a file logging blocked queries
@@ -821,13 +833,15 @@ fragments_blocked = ['cisco', 'cisco-ipv6', 'cisco-familyshield', 'cisco-familys
 ## in different countries, operated by different entities, on distinct ISPs...)
 
 routes = [
-   { server_name='*', via=['anon-cs-nl', 'anon-cs-nl2', 'anon-meganerd', 'anon-serbica'] },
+{% for route in dnscrypt_service_config.anonymized_routes | default([{'server_name': '*', 'via': ['anon-cs-nl', 'anon-cs-nl2', 'anon-meganerd', 'anon-serbica']}]) %}
+   { server_name='{{ route.server_name }}', via={{ route.via | to_json | regex_replace('"', '\'') }} },
+{% endfor %}
 ]
 
 
 ## Skip resolvers incompatible with anonymization instead of using them directly
 
-skip_incompatible = false
+skip_incompatible = {{ dnscrypt_service_config.skip_incompatible | default(false) | lower }}
 
 
 ## If public server certificates for a non-conformant server cannot be
