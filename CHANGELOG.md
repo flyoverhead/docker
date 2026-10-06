@@ -2,6 +2,18 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.1.1
+
+### Fixed
+
+- **dnscrypt**: the weekly blocklist refresh never reached the running proxy.
+  dnscrypt-proxy's hot reload watches the config directory, which never sees
+  a change made through a single-file bind mount. The refresh job now sends
+  SIGHUP after the in-place copy, and `enable_hot_reload` is no longer set.
+- **dnscrypt**: the refresh-job task ran (as `state: absent`) on hosts
+  without a blocklist, and `ansible.builtin.cron` fails there when `crontab`
+  is not installed. It is now skipped unless `blocked_names_url` is set.
+
 ## 2.1.0
 
 ### Added
