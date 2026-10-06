@@ -13,20 +13,29 @@ default.
 | `dnscrypt_docker_config` | Docker configuration | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `dnscrypt_service_config` | Service configuration | Definition example in [defaults/main.yml](defaults/main.yml) |
 
-`dnscrypt_sysctl_config_ipv6` in [vars/main.yml](vars/main.yml) lists the sysctl
-keys toggled from `dnscrypt_service_config.ipv6_servers`. It is a role internal,
-not a knob.
-
 ## Host-level changes
 
-Two things outside the container are managed, both driven by facts gathered in
+One thing outside the container is managed, driven by facts gathered in
 `detect.yml`:
 
 - `avahi-daemon.service` and `avahi-daemon.socket` are stopped and masked when
   `dnscrypt_service_config.listening_port` is 5353, because avahi owns the mDNS
   port on a stock Debian install. Skipped when the units are not present.
-- IPv6 is disabled or enabled via sysctl to match
-  `dnscrypt_service_config.ipv6_servers`.
+
+## Anonymised DNS and blocklist
+
+Keys of `dnscrypt_service_config`. The template applies the same defaults when
+a key is missing, so an inventory that defines the whole dict without them
+renders as before.
+
+| Key | Default | Description |
+| :--- | :--- | :--- |
+| `anonymized_routes` | `*` via `anon-cs-nl`, `anon-cs-nl2`, `anon-meganerd`, `anon-serbica` | `[anonymized_dns] routes`; `via: ['*']` lets the proxy pick relays |
+| `skip_incompatible` | `false` | Skip servers that cannot be reached through a relay instead of using them directly |
+| `blocked_names_url` | `''` | Blocklist URL; downloaded by the role, refreshed weekly by cron, hot-reloaded |
+| `blocked_query_response` | `''` (upstream `hinfo`) | e.g. `a:0.0.0.0,aaaa:::` |
+| `cache_min_ttl` | `2400` | Minimum cache TTL, seconds |
+| `cache_max_ttl` | `86400` | Maximum cache TTL, seconds |
 
 ## Facts set by this role
 

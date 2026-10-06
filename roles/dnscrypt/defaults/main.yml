@@ -37,3 +37,15 @@ dnscrypt_service_config:
   block_undelegated: true
   dns_cache: true
   dns_cache_size: 4096
+  anonymized_routes:
+    - server_name: '*'
+      via:
+        - anon-cs-nl
+        - anon-cs-nl2
+        - anon-meganerd
+        - anon-serbica
+  skip_incompatible: false
+  blocked_names_url: ''
+  blocked_query_response: ''
+  cache_min_ttl: 2400
+  cache_max_ttl: 86400
