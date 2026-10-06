@@ -2,6 +2,14 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.2.0
+
+### Added
+
+- **xray**: client profiles render `xray_clients_config.observatory`, so a
+  profile can carry a health-checked balancer (`routing.balancers` already
+  rendered as part of `routing`).
+
 ## 2.1.3
 
 ### Fixed
