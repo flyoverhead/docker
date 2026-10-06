@@ -15,7 +15,6 @@ services:
       - {{ torrserver_docker_config.path }}/{{ torrserver_service_config.data_dir }}:/opt/ts/config
       - {{ torrserver_docker_config.path }}/{{ torrserver_service_config.torrents_dir }}:/opt/ts/torrents
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
 {% if torrserver_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ torrserver_service_config.listening_port }}:{{ torrserver_service_config.listening_port }}"

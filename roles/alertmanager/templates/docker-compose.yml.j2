@@ -12,7 +12,6 @@ services:
       - {{ alertmanager_docker_config.path }}:/etc/alertmanager:ro
       - {{ alertmanager_docker_config.path }}/data:/alertmanager
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
 {% if alertmanager_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ alertmanager_service_config.listening_port }}:{{ alertmanager_service_config.listening_port }}"

@@ -26,7 +26,6 @@ services:
       - {{ pihole_docker_config.path }}/dnsmasq.d:/etc/dnsmasq.d
 {% endif %}
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
 {% if pihole_docker_config.network_mode == 'bridge' %}
     ports:
       - "53:53/tcp"
