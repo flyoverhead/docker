@@ -117,6 +117,29 @@ xray_client_inbounds:
 A client listed here gets these inbounds in its profile instead of
 `xray_clients_config.inbounds`.
 
+## Client balancing example
+
+`routing.balancers` renders as part of `routing`. A balancer whose strategy
+needs health data (`leastPing`, or `random`/`roundRobin` with `fallbackTag`)
+also needs an observatory, set under `xray_clients_config.observatory`:
+
+```yaml
+xray_clients_config:
+  observatory:
+    subjectSelector: [out-a, out-b]
+    probeURL: https://example.com/generate_204
+    probeInterval: 1m
+  routing:
+    balancers:
+      - tag: pool
+        selector: [out-a, out-b]
+        strategy:
+          type: leastPing
+        fallbackTag: out-a
+```
+
+Selectors are prefix matches: use exact outbound tags.
+
 ## Predefined secrets
 
 By default the role generates the server `REALITY` key pair (`xray x25519`) and

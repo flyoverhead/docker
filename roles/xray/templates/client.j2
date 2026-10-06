@@ -48,6 +48,15 @@
 {% endfor %}
   },
 {% endif %}
+{% if (xray_clients_config.observatory | default({})).items() | length > 0 %}
+  "observatory": {
+{% for key, value in xray_clients_config.observatory.items() %}
+    {{ key | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
+    trim | indent(4) }}{{ ',' if not loop.last }}
+{% endfor %}
+  },
+{% endif %}
   "log": {
 {% for key, value in (xray_clients_config.log | default({})).items() %}
     {{ key | to_nice_json(sort_keys=false) |
