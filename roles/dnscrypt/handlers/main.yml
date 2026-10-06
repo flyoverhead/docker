@@ -10,7 +10,7 @@
     wait: true
     wait_timeout: 60
   when:
-    - not (ansible_check_mode and not dnscrypt_container_exists)
+    - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))
 
 # `state: restarted` maps to `docker compose restart`: it reloads bind-mounted
 # configuration without touching the image. Use it for config changes only.
@@ -20,7 +20,7 @@
     project_src: '{{ dnscrypt_docker_config.path }}'
     state: restarted
   when:
-    - not (ansible_check_mode and not dnscrypt_container_exists)
+    - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))
 
 # An image or compose change needs `docker compose up` -- `restart` would keep
 # running the old image forever. `pull: always` makes a moving tag resolve too.
@@ -34,4 +34,4 @@
     wait: true
     wait_timeout: 60
   when:
-    - not (ansible_check_mode and not dnscrypt_container_exists)
+    - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))

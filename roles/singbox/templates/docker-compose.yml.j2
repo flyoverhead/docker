@@ -12,7 +12,6 @@ services:
       - {{ singbox_docker_config.path }}/config.json:/etc/sing-box/config.json:ro
       - {{ singbox_docker_config.path }}/data:/var/lib/sing-box
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
 {% if singbox_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ singbox_server_config.listening_port }}:{{ singbox_server_config.listening_port }}"

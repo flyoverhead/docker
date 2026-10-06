@@ -18,7 +18,6 @@ services:
       - {{ grafana_docker_config.path }}/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - {{ grafana_docker_config.path }}/dashboards:/etc/grafana/dashboards:ro
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
 {% if grafana_docker_config.network_mode == 'bridge' %}
     ports:
       - "{{ grafana_service_config.listening_port }}:{{ grafana_service_config.listening_port }}"

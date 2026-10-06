@@ -8,6 +8,8 @@
     state: absent
     wait: true
     wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (xray_container_exists | default(true)))
 
 - name: xray | start container
   become: true
@@ -16,6 +18,8 @@
     state: present
     wait: true
     wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (xray_container_exists | default(true)))
 
 # `state: present` with `recreate: always` rather than `state: restarted`: the
 # latter maps to `docker compose restart`, which leaves the old container -- and
@@ -28,3 +32,5 @@
     recreate: always
     wait: true
     wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (xray_container_exists | default(true)))

@@ -15,6 +15,8 @@
     state: present
     wait: true
     wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (pihole_container_exists | default(true)))
 
 # An image or compose change needs `docker compose up` -- `restart` would keep
 # running the old image forever. `pull: always` makes a moving tag resolve too.
@@ -27,6 +29,8 @@
     recreate: always
     wait: true
     wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (pihole_container_exists | default(true)))
 
 # gravity.db rows are managed with sqlite3 on the host rather than the pihole
 # CLI: the lists are declarative here, so every run has to be able to converge
