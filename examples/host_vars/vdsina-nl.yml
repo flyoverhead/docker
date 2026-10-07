@@ -1,7 +1,6 @@
 ---
 
 ansible_host: 192.0.2.20
-ansible_hostname: vdsina-nl
 
 xray_vless_address: www.example.nl
 

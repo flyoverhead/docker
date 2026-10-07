@@ -43,25 +43,25 @@ prometheus_scrape_jobs:
       - targets:
           - '{{ ansible_host }}:{{ alertmanager_service_config.listening_port }}'
         labels:
-          instance: '{{ ansible_hostname }}'
+          instance: '{{ ansible_facts.hostname }}'
   - job_name: node-exporter
     scrape_interval: 1m
     static_configs:
       - targets:
           - '{{ ansible_host }}:{{ node_exporter_service_config.listening_port }}'
         labels:
-          instance: '{{ ansible_hostname }}'
+          instance: '{{ ansible_facts.hostname }}'
   - job_name: prometheus
     scrape_interval: 1m
     static_configs:
       - targets:
           - '{{ ansible_host }}:{{ prometheus_service_config.listening_port }}'
         labels:
-          instance: '{{ ansible_hostname }}'
+          instance: '{{ ansible_facts.hostname }}'
 
 prometheus_alert_jobs:
   - static_configs:
       - targets:
           - '{{ ansible_host }}:{{ alertmanager_service_config.listening_port }}'
         labels:
-          instance: '{{ ansible_hostname }}'
+          instance: '{{ ansible_facts.hostname }}'

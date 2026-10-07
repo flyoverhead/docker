@@ -1,7 +1,6 @@
 ---
 
 ansible_host: 192.0.2.10
-ansible_hostname: timeweb-ru
 
 xray_vless_address: www.example.com
 
