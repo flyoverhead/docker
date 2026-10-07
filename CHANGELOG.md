@@ -2,6 +2,18 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.2.1
+
+### Fixed
+
+- **Facts are read through `ansible_facts`.** The `docker` defaults
+  (`ansible_distribution`, `ansible_distribution_release` in `docker_repo`)
+  and the `prometheus` defaults (`ansible_hostname` as the `instance` label of
+  every scrape job) used injected fact names, which ansible-core 2.21
+  deprecates and 2.24 removes. Rendered values are unchanged.
+- The example inventory no longer sets `ansible_hostname` in host_vars: the
+  gathered fact always outranked it, so it never took effect.
+
 ## 2.2.0
 
 ### Added
