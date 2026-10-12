@@ -35,5 +35,8 @@
     - role: torrserver
       when: '"torrserver" in group_names'
 
+    - role: caddy
+      when: '"caddy" in group_names'
+
     - role: xray
       when: '"xray" in group_names'

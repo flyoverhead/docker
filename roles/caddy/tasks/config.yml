@@ -1,0 +1,38 @@
+---
+
+- name: config | caddy configuration
+  become: true
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: '{{ caddy_docker_config.path }}/Caddyfile'
+    owner: root
+    group: root
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - caddy | restart container
+
+- name: config | caddy site
+  become: true
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: '{{ caddy_docker_config.path }}/site/index.html'
+    owner: root
+    group: root
+    mode: '0644'
+  when:
+    - caddy_service_config.site_src | default('') | length == 0
+
+# copy, not synchronize: no rsync dependency on the host, at the cost of never
+# deleting a file that was removed from site_src
+- name: config | caddy site files
+  become: true
+  ansible.builtin.copy:
+    src: '{{ caddy_service_config.site_src }}/'
+    dest: '{{ caddy_docker_config.path }}/site/'
+    owner: root
+    group: root
+    mode: '0644'
+    directory_mode: '0755'
+  when:
+    - caddy_service_config.site_src | default('') | length > 0

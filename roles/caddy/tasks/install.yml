@@ -1,0 +1,27 @@
+---
+
+- name: install | caddy service folders
+  become: true
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - '{{ caddy_docker_config.path }}'
+    - '{{ caddy_docker_config.path }}/config'
+    - '{{ caddy_docker_config.path }}/data'
+    - '{{ caddy_docker_config.path }}/site'
+
+- name: install | caddy docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ caddy_docker_config.path }}/docker-compose.yml'
+    owner: root
+    group: root
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - caddy | start container

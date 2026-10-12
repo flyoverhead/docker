@@ -1,0 +1,8 @@
+---
+
+caddy_service_config:
+  domain: host-01.local
+  http_port: 80
+  https_port: 8443
+  https_bind: 127.0.0.1
+  site_title: ''

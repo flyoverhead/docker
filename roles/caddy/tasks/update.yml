@@ -1,0 +1,13 @@
+---
+
+- name: update | caddy docker-compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ caddy_docker_config.path }}/docker-compose.yml'
+    owner: root
+    group: root
+    mode: '0644'
+    lstrip_blocks: true
+  notify:
+    - caddy | recreate container

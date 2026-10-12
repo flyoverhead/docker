@@ -2,6 +2,26 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.3.0
+
+### Added
+
+- **caddy**: new role. Serves one static site with an automatically issued
+  and renewed Let's Encrypt certificate. The TLS site binds to
+  `127.0.0.1:8443` by default and plain HTTP on `:80` answers the ACME HTTP-01
+  challenge and redirects to https. Built as a self-hosted REALITY target:
+  a third-party target receives a mirror connection for every handshake, and
+  its anti-DDoS can end up dropping the proxy server's address, which takes
+  every client down at once.
+- **xray**: `xray_server_config.reality_target` overrides the REALITY target
+  (`vless_address:target_port` when empty), so the target can be a local site
+  while `serverNames` keeps the public name.
+
+### Changed
+
+- The Vagrant example moves sing-box from 8443 to 9443, leaving 8443 to
+  caddy's loopback TLS site.
+
 ## 2.2.1
 
 ### Fixed

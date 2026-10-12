@@ -13,7 +13,7 @@ singbox_server_config:
   name: '{{ inventory_hostname }}'
   tag: proxy
   listening_address: 0.0.0.0
-  listening_port: 8443
+  listening_port: 9443
   public_address: '{{ ansible_host }}'
   vless_address: npo.nl
   vless_port: 443
@@ -42,7 +42,7 @@ singbox_clients_config:
     - type: vless
       tag: out-proxy
       server: '{{ ansible_host }}'
-      server_port: 8443
+      server_port: 9443
       uuid: '{{ item.uuid | default("") }}'
       flow: xtls-rprx-vision
       tls:

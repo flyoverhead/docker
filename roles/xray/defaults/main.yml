@@ -24,6 +24,9 @@ xray_server_config:
   public_address: '{{ ansible_host }}'
   vless_address: vk.com
   target_port: 443
+  # host:port REALITY dials instead of vless_address:target_port, e.g. a local
+  # web server that holds a real certificate for vless_address
+  reality_target: ''
   dns_port: 53
   flow: xtls-rprx-vision
   stream_settings:
