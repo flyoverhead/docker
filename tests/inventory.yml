@@ -2,13 +2,17 @@
 
 # Every service group is a child of `docker`, so a single Vagrant box runs the
 # whole stack. Ports have to stay distinct across groups: dnscrypt takes 5353
-# and pihole 53, singbox 8443 and xray 443.
+# and pihole 53, singbox 9443 and xray 443; caddy 80 and 127.0.0.1:8443.
 
 docker:
   hosts:
     host-01:
 
 alertmanager:
+  children:
+    docker:
+
+caddy:
   children:
     docker:
 

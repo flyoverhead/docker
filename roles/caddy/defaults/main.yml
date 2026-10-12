@@ -1,0 +1,26 @@
+---
+
+# https://caddyserver.com/docs/
+# https://hub.docker.com/_/caddy/tags
+
+caddy_docker_config:
+  name: caddy
+  image: caddy
+  tag: 2.11.4
+  path: '{{ docker_path }}/caddy'
+  restart_policy: '{{ docker_restart_policy }}'
+  # deliberately not '{{ docker_network_mode }}': the TLS site binds loopback for a
+  # local consumer (a REALITY target), which a bridge network would hide
+  network_mode: host
+  timezone: '{{ docker_timezone }}'
+
+caddy_service_config:
+  domain: ''
+  # further names served by the same site; each gets its own certificate
+  aliases: []
+  http_port: 80
+  https_port: 8443
+  https_bind: 127.0.0.1
+  site_title: ''
+  # controller directory copied to the site root; empty serves the built-in page
+  site_src: ''

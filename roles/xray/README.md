@@ -80,6 +80,13 @@ xray_server_config:
 generated keypair and short IDs, so any transport (`tcp`, `xhttp`, `grpc`, ...)
 can be configured without touching the template.
 
+REALITY's `target` is `vless_address:target_port` unless
+`xray_server_config.reality_target` (`host:port`) is set. Point it at a local
+web server holding a real certificate for `vless_address` (for example the
+`flyoverhead.docker.caddy` role on `127.0.0.1:8443`) so the handshake does not
+depend on a third-party site, whose anti-DDoS may blackhole the server's IP.
+`serverNames` is always `[vless_address]`.
+
 ## Clients list example
 
 ```yaml

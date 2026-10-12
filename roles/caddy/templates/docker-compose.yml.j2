@@ -1,0 +1,17 @@
+{{ ansible_managed | comment }}
+---
+
+services:
+  {{ caddy_docker_config.name }}:
+    image: {{ caddy_docker_config.image }}:{{ caddy_docker_config.tag }}
+    container_name: {{ caddy_docker_config.name }}
+    restart: {{ caddy_docker_config.restart_policy }}
+    environment:
+      - TZ={{ caddy_docker_config.timezone }}
+    volumes:
+      - {{ caddy_docker_config.path }}/Caddyfile:/etc/caddy/Caddyfile:ro
+      - {{ caddy_docker_config.path }}/site:/srv:ro
+      - {{ caddy_docker_config.path }}/data:/data
+      - {{ caddy_docker_config.path }}/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    network_mode: {{ caddy_docker_config.network_mode }}

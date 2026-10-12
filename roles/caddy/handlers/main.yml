@@ -1,0 +1,37 @@
+---
+
+- name: caddy | start container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ caddy_docker_config.path }}'
+    state: present
+    wait: true
+    wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (caddy_container_exists | default(true)))
+
+# An image or compose change needs `docker compose up` -- `restart` would keep
+# running the old image forever. `pull: always` makes a moving tag resolve too.
+- name: caddy | recreate container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ caddy_docker_config.path }}'
+    state: present
+    pull: always
+    recreate: always
+    wait: true
+    wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (caddy_container_exists | default(true)))
+
+# admin is off in the Caddyfile, so a config change is picked up by a restart,
+# not by `caddy reload`
+- name: caddy | restart container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ caddy_docker_config.path }}'
+    state: restarted
+    wait: true
+    wait_timeout: 60
+  when:
+    - not (ansible_check_mode and not (caddy_container_exists | default(true)))

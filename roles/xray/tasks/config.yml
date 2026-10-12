@@ -85,7 +85,10 @@
 - name: config | set reality settings fact
   ansible.builtin.set_fact:
     xray_reality_settings:
-      target: '{{ xray_server_config.vless_address }}:{{ xray_server_config.target_port }}'
+      target: >-
+        {{ xray_server_config.reality_target
+        if xray_server_config.reality_target | default('', true) | length > 0
+        else xray_server_config.vless_address ~ ':' ~ xray_server_config.target_port }}
       serverNames:
         - '{{ xray_server_config.vless_address }}'
       privateKey: '{{ xray_server_config.private_key }}'

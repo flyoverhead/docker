@@ -1,0 +1,30 @@
+{{ ansible_managed | comment }}
+{% set names = [caddy_service_config.domain] + (caddy_service_config.aliases | default([], true)) %}
+{
+	admin off
+	http_port {{ caddy_service_config.http_port }}
+	https_port {{ caddy_service_config.https_port }}
+	default_sni {{ caddy_service_config.domain }}
+	servers {
+		protocols h1 h2
+	}
+}
+
+http://{{ names | join(', http://') }} {
+	redir https://{host}{uri} permanent
+}
+
+{{ names | join(', ') }} {
+	bind {{ caddy_service_config.https_bind }}
+	tls {
+		issuer acme {
+			disable_tlsalpn_challenge
+		}
+	}
+	root * /srv
+	file_server
+	handle_errors {
+		rewrite * /{err.status_code}.html
+		file_server
+	}
+}

@@ -1,0 +1,26 @@
+---
+
+- name: detect | caddy domain is set
+  ansible.builtin.assert:
+    that:
+      - caddy_service_config.domain | default('') | length > 0
+    fail_msg: caddy_service_config.domain is empty; Caddy needs the site name to obtain a certificate
+    quiet: true
+
+- name: detect | caddy container
+  become: true
+  community.docker.docker_container_info:
+    name: '{{ caddy_docker_config.name }}'
+  register: caddy_container
+
+- name: detect | set caddy_container_exists fact
+  ansible.builtin.set_fact:
+    caddy_container_exists: '{{ true if caddy_container.exists else false }}'
+
+- name: detect | set caddy_container_update fact
+  ansible.builtin.set_fact:
+    caddy_container_update: >-
+      {{ true if
+      caddy_container.exists and
+      caddy_docker_config.tag not in caddy_container.container.Config.Image
+      else false }}

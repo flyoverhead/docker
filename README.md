@@ -1,10 +1,10 @@
 # `flyoverhead.docker`
 
-[![Version](https://img.shields.io/badge/version-2.2.1-blue)](galaxy.yml)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue)](galaxy.yml)
 [![ansible-core](https://img.shields.io/badge/ansible--core-%E2%89%A52.16-black?logo=ansible&logoColor=white)](https://docs.ansible.com/ansible-core/devel/index.html)
 [![License](https://img.shields.io/badge/license-GPL--3.0--only-green)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/platform-Debian%2012%20%7C%2013-A81D33?logo=debian&logoColor=white)](#-supported-os)
-[![Roles](https://img.shields.io/badge/roles-10-orange)](#-roles)
+[![Roles](https://img.shields.io/badge/roles-11-orange)](#-roles)
 
 Docker services deployment and configuration.
 
@@ -80,11 +80,12 @@ bullseye-specific, but it is out of standard support and is not tested.
 ## 📦 Roles
 
 <details>
-<summary><b>All 10 roles</b> — image and pinned tag for each</summary>
+<summary><b>All 11 roles</b> — image and pinned tag for each</summary>
 
 | Name | Description | Image | Version |
 | :--- | :--- | :--- | :--- |
 | [alertmanager](roles/alertmanager/README.md) | `Alertmanager` alert routing and notification | `prom/alertmanager` | `v0.34.0` |
+| [caddy](roles/caddy/README.md) | `Caddy` static site with automatic Let's Encrypt TLS, e.g. a self-hosted REALITY target | `caddy` | `2.11.4` |
 | [dnscrypt](roles/dnscrypt/README.md) | `DNSCrypt Proxy` encrypted upstream resolver | `klutchell/dnscrypt-proxy` | `2.1.18` |
 | [docker](roles/docker/README.md) | `Docker` engine, shared paths and daemon settings | n/a (apt) | repository latest |
 | [grafana](roles/grafana/README.md) | `Grafana` dashboards and provisioning | `grafana/grafana` | `13.1.4` |
@@ -161,10 +162,10 @@ on the forwarded ports declared in the `Vagrantfile`:
 | dnscrypt-proxy | 5353 |
 | torrserver | 8070 |
 | pihole web | 8080 |
-| sing-box | 8443 |
 | prometheus | 9090 |
 | alertmanager | 9093 |
 | node-exporter | 9100 |
+| sing-box | 9443 |
 
 Linting matches CI, via the pre-commit hooks in `.pre-commit-config.yaml`:
 
