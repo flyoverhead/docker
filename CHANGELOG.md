@@ -2,6 +2,18 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.5.0
+
+### Added
+
+- **xray**: `xray_client_routing` overrides `routing` in one client's profile,
+  keyed by client email, the same way `xray_client_inbounds` overrides
+  `inbounds`. A client gets the override instead of
+  `xray_clients_config.routing`, balancers included; `observatory` is not
+  overridden. Clients that are not listed render exactly as before. The
+  override can be derived from the shared routing, e.g. by filtering rules on
+  `ruleTag`, so it does not drift from it.
+
 ## 2.4.0
 
 ### Added

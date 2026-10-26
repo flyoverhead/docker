@@ -13,6 +13,7 @@ configured client on the controller.
 | `xray_server_config` | Server configuration | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `xray_clients_config` | Clients configuration | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `xray_client_inbounds` | Per-client `inbounds` override, keyed by client email | `Example below` |
+| `xray_client_routing` | Per-client `routing` override, keyed by client email | `Example below` |
 | `xray_tuning_config` | Server kernel optimization parameters | Definition example in [defaults/main.yml](defaults/main.yml) |
 | `xray_force_update_secrets` | Force regeneration of server keys and client secrets | `false` |
 
@@ -123,6 +124,39 @@ xray_client_inbounds:
 
 A client listed here gets these inbounds in its profile instead of
 `xray_clients_config.inbounds`.
+
+## Per-client routing example
+
+```yaml
+xray_client_routing:
+  macbook:
+    domainStrategy: IPIfNonMatch
+    rules:
+      - type: field
+        ip:
+          - geoip:private
+        outboundTag: direct
+      - type: field
+        network: tcp,udp
+        outboundTag: proxy
+```
+
+A client listed here gets this `routing` in its profile instead of
+`xray_clients_config.routing`, balancers included, so a balancer the override
+still uses must be repeated in it. `observatory` is not overridden.
+
+To derive the override from the shared routing instead of copying it, tag the
+rules to drop with `ruleTag` and filter them out. xray refuses duplicate
+`ruleTag` values, so each tag must be unique. The example drops every tagged
+rule and keeps the order of the rest:
+
+```yaml
+xray_client_routing:
+  macbook: >-
+    {{ xray_clients_config.routing | combine({'rules':
+    xray_clients_config.routing.rules
+    | rejectattr('ruleTag', 'defined') | list}) }}
+```
 
 ## Client balancing example
 

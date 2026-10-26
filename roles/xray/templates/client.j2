@@ -39,9 +39,11 @@
     }{{ ',' if not loop.last }}
 {% endfor %}
   ],
-{% if (xray_clients_config.routing | default({})).items() | length > 0 %}
+{% set client_routing = (xray_client_routing | default({}))[item.email | default('')]
+   | default(xray_clients_config.routing | default({})) %}
+{% if client_routing.items() | length > 0 %}
   "routing": {
-{% for key, value in xray_clients_config.routing.items() %}
+{% for key, value in client_routing.items() %}
     {{ key | to_nice_json(sort_keys=false) |
     trim | indent(4) }}: {{ value | to_nice_json(sort_keys=false) |
     trim | indent(4) }}{{ ',' if not loop.last }}
