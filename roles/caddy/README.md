@@ -36,10 +36,17 @@ certificate rather than an alert.
 
 `site_src` is a directory on the controller whose contents are copied to the
 site root. When it is empty the role serves a one-page placeholder titled
-`site_title` (falling back to the domain). The copy never deletes files that
-were removed from `site_src`. Errors are served from `/<status>.html` in the
-site root when present, so ship at least a `404.html`. Caddy reads the files
-from disk on every request, so content changes need no restart.
+`site_title` (falling back to the domain). The copy itself never deletes files
+that were removed from `site_src`; set `site_prune: true` to delete them, which
+matters for generators that write content-hashed asset names on every build.
+Errors are served from `/<status>.html` in the site root when present, so ship
+at least a `404.html`. Caddy reads the files from disk on every request, so
+content changes need no restart.
+
+Responses are compressed with zstd or gzip. `headers` sets response headers on
+the TLS site, for example `Strict-Transport-Security`; a name starting with `-`
+removes that header (`-Server: ''`). The default is none, so the placeholder
+site of a REALITY target keeps Caddy's stock responses unless you add some.
 
 ## Facts set by this role
 
@@ -78,6 +85,12 @@ caddy_service_config:
     - www.example.org
   site_title: ''
   site_src: '{{ inventory_dir }}/files/sites/example'
+  site_prune: true
+  headers:
+    Strict-Transport-Security: max-age=31536000
+    X-Content-Type-Options: nosniff
+    Referrer-Policy: strict-origin-when-cross-origin
+    -Server: ''
 
 xray_server_config:
   # ...
@@ -88,7 +101,8 @@ xray_server_config:
 ## Check mode
 
 `--check --diff` reports drift in the rendered Caddyfile, the site and the
-compose file. Detection reads the running container through
+compose file. With `site_prune`, the run lists the site root even in check mode and reports
+each file it would delete. Detection reads the running container through
 `community.docker.docker_container_info`, so a check run needs a reachable
 docker daemon. On a first deployment the compose handlers are skipped in check
 mode.

@@ -24,3 +24,7 @@ caddy_service_config:
   site_title: ''
   # controller directory copied to the site root; empty serves the built-in page
   site_src: ''
+  # delete files on the host that are no longer in site_src
+  site_prune: false
+  # response headers for the TLS site; a name starting with '-' removes that header
+  headers: {}
