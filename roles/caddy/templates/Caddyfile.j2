@@ -21,6 +21,18 @@ http://{{ names | join(', http://') }} {
 			disable_tlsalpn_challenge
 		}
 	}
+	encode zstd gzip
+{% if caddy_service_config.headers | default({}, true) %}
+	header {
+{% for name, value in caddy_service_config.headers.items() %}
+{% if name.startswith('-') %}
+		{{ name }}
+{% else %}
+		{{ name }} "{{ value | replace('"', '\\"') }}"
+{% endif %}
+{% endfor %}
+	}
+{% endif %}
 	root * /srv
 	file_server
 	handle_errors {

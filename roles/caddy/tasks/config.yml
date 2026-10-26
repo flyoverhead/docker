@@ -23,8 +23,8 @@
   when:
     - caddy_service_config.site_src | default('') | length == 0
 
-# copy, not synchronize: no rsync dependency on the host, at the cost of never
-# deleting a file that was removed from site_src
+# copy, not synchronize: no rsync dependency on the host; site_prune below removes
+# what site_src no longer has
 - name: config | caddy site files
   become: true
   ansible.builtin.copy:
@@ -36,3 +36,35 @@
     directory_mode: '0755'
   when:
     - caddy_service_config.site_src | default('') | length > 0
+
+# read-only, so a check run still reports what a real run would prune
+- name: config | caddy site listing
+  become: true
+  ansible.builtin.find:
+    paths: '{{ caddy_docker_config.path }}/site'
+    recurse: true
+    file_type: any
+    hidden: true
+  register: caddy_site_files
+  check_mode: false
+  when:
+    - caddy_service_config.site_src | default('') | length > 0
+    - caddy_service_config.site_prune | default(false) | bool
+
+- name: config | caddy site prune
+  become: true
+  ansible.builtin.file:
+    path: '{{ caddy_docker_config.path }}/site/{{ item }}'
+    state: absent
+  loop: '{{ caddy_site_host_paths | difference(caddy_site_src_paths) | sort(reverse=true) }}'
+  vars:
+    caddy_site_src_paths: >-
+      {{ lookup('community.general.filetree', caddy_service_config.site_src, wantlist=true)
+         | map(attribute='path') | list }}
+    caddy_site_host_paths: >-
+      {{ caddy_site_files.files | map(attribute='path')
+         | map('regex_replace', '^' ~ ((caddy_docker_config.path ~ '/site/') | regex_escape), '')
+         | list }}
+  when:
+    - caddy_service_config.site_src | default('') | length > 0
+    - caddy_service_config.site_prune | default(false) | bool

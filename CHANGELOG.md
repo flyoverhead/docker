@@ -2,6 +2,21 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.4.0
+
+### Added
+
+- **caddy**: `caddy_service_config.site_prune` deletes files on the host that
+  are no longer in `site_src`. The copy alone never deletes, so a static site
+  generator's content-hashed assets piled up on every deploy. Off by default;
+  check mode lists what would be deleted.
+- **caddy**: `caddy_service_config.headers` sets response headers on the TLS
+  site; a name starting with `-` removes a header. Empty by default.
+
+### Changed
+
+- **caddy**: the TLS site compresses responses with zstd or gzip.
+
 ## 2.3.0
 
 ### Added
