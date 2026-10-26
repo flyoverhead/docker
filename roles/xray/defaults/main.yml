@@ -142,6 +142,20 @@ xray_client_inbounds: {}
   #     settings:
   #       udp: true
 
+# Per-client `routing` override, keyed by client email. A client listed here
+# gets this routing in its profile instead of xray_clients_config.routing.
+xray_client_routing: {}
+  # macbook:
+  #   domainStrategy: IPIfNonMatch
+  #   rules:
+  #     - type: field
+  #       ip:
+  #         - geoip:private
+  #       outboundTag: direct
+  #     - type: field
+  #       network: tcp,udp
+  #       outboundTag: proxy
+
 xray_tuning_config:
   enabled: false
   fs.file-max: 51200
