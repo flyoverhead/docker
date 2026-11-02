@@ -2,6 +2,29 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.6.1
+
+### Fixed
+
+- **xray**, **singbox**: an image or compose change no longer leaves the host
+  without a running proxy. The update stopped and removed the container in one
+  handler and started the new one in a second. When the controller's SSH rode
+  that same proxy, the first handler cut the session and the second never
+  reached the host; the play ignored the unreachable host and xray stayed down
+  until it was started by hand.
+
+  The two handlers are replaced by one `recreate container` handler: `pull:
+  always` fetches the new image while the old container still runs, then
+  `recreate: always` swaps them. It and `restart container` run `async`, so
+  the swap finishes even when the connection drops; only the status polling
+  then reports the host unreachable.
+
+### Changed
+
+- **xray**, **singbox**: the `kill container` handler is gone, and with it
+  `remove_images: local`. The previous image is no longer deleted on an
+  update; `docker image prune` reclaims it.
+
 ## 2.6.0
 
 ### Changed

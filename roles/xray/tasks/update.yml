@@ -10,5 +10,4 @@
     mode: '0644'
     lstrip_blocks: true
   notify:
-    - xray | kill container
-    - xray | start container
+    - xray | recreate container
