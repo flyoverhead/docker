@@ -1,6 +1,6 @@
 # `flyoverhead.docker`
 
-[![Version](https://img.shields.io/badge/version-2.5.0-blue)](galaxy.yml)
+[![Version](https://img.shields.io/badge/version-2.6.0-blue)](galaxy.yml)
 [![ansible-core](https://img.shields.io/badge/ansible--core-%E2%89%A52.16-black?logo=ansible&logoColor=white)](https://docs.ansible.com/ansible-core/devel/index.html)
 [![License](https://img.shields.io/badge/license-GPL--3.0--only-green)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/platform-Debian%2012%20%7C%2013-A81D33?logo=debian&logoColor=white)](#-supported-os)
@@ -84,17 +84,17 @@ bullseye-specific, but it is out of standard support and is not tested.
 
 | Name | Description | Image | Version |
 | :--- | :--- | :--- | :--- |
-| [alertmanager](roles/alertmanager/README.md) | `Alertmanager` alert routing and notification | `prom/alertmanager` | `v0.34.0` |
-| [caddy](roles/caddy/README.md) | `Caddy` static site with automatic Let's Encrypt TLS, e.g. a self-hosted REALITY target | `caddy` | `2.11.4` |
-| [dnscrypt](roles/dnscrypt/README.md) | `DNSCrypt Proxy` encrypted upstream resolver | `klutchell/dnscrypt-proxy` | `2.1.18` |
+| [alertmanager](roles/alertmanager/README.md) | `Alertmanager` alert routing and notification | `prom/alertmanager` | `v0.34.2` |
+| [caddy](roles/caddy/README.md) | `Caddy` static site with automatic Let's Encrypt TLS, e.g. a self-hosted REALITY target | `caddy` | `2.11.7` |
+| [dnscrypt](roles/dnscrypt/README.md) | `DNSCrypt Proxy` encrypted upstream resolver | `klutchell/dnscrypt-proxy` | `2.1.20` |
 | [docker](roles/docker/README.md) | `Docker` engine, shared paths and daemon settings | n/a (apt) | repository latest |
-| [grafana](roles/grafana/README.md) | `Grafana` dashboards and provisioning | `grafana/grafana` | `13.1.4` |
+| [grafana](roles/grafana/README.md) | `Grafana` dashboards and provisioning | `grafana/grafana` | `13.3.0` |
 | [node_exporter](roles/node_exporter/README.md) | `Node exporter` host metrics | `prom/node-exporter` | `v1.12.1` |
-| [pihole](roles/pihole/README.md) | `Pi-hole` DNS ad blocking | `pihole/pihole` | `2026.07.2` |
-| [prometheus](roles/prometheus/README.md) | `Prometheus` metrics collection and alerting rules | `prom/prometheus` | `v3.14.0` |
-| [singbox](roles/singbox/README.md) | `Sing-box` VLESS + REALITY VPN | `ghcr.io/sagernet/sing-box` | `v1.13.19` |
-| [torrserver](roles/torrserver/README.md) | `TorrServer` torrent streaming | `ghcr.io/yourok/torrserver` | `MatriX.143` |
-| [xray](roles/xray/README.md) | `Xray` VLESS + REALITY VPN | `teddysun/xray` | `26.7.28` |
+| [pihole](roles/pihole/README.md) | `Pi-hole` DNS ad blocking | `pihole/pihole` | `2026.10.1` |
+| [prometheus](roles/prometheus/README.md) | `Prometheus` metrics collection and alerting rules | `prom/prometheus` | `v3.15.1` |
+| [singbox](roles/singbox/README.md) | `Sing-box` VLESS + REALITY VPN | `ghcr.io/sagernet/sing-box` | `v1.13.21` |
+| [torrserver](roles/torrserver/README.md) | `TorrServer` torrent streaming | `ghcr.io/yourok/torrserver` | `MatriX.148` |
+| [xray](roles/xray/README.md) | `Xray` VLESS + REALITY VPN | `teddysun/xray` | `26.10.31` |
 
 </details>
 

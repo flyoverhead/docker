@@ -12,7 +12,7 @@
 pihole_docker_config:
   name: pihole
   image: pihole/pihole
-  tag: 2026.07.2
+  tag: 2026.10.1
   path: '{{ docker_path }}/pihole'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'

@@ -6,7 +6,7 @@
 caddy_docker_config:
   name: caddy
   image: caddy
-  tag: 2.11.4
+  tag: 2.11.7
   path: '{{ docker_path }}/caddy'
   restart_policy: '{{ docker_restart_policy }}'
   # deliberately not '{{ docker_network_mode }}': the TLS site binds loopback for a

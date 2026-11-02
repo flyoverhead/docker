@@ -3,7 +3,7 @@
 prometheus_docker_config:
   name: prometheus
   image: prom/prometheus
-  tag: v3.14.0
+  tag: v3.15.1
   path: '{{ docker_path }}/prometheus'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'

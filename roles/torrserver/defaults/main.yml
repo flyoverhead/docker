@@ -11,7 +11,7 @@
 torrserver_docker_config:
   name: torrserver
   image: ghcr.io/yourok/torrserver
-  tag: MatriX.143
+  tag: MatriX.148
   path: '{{ docker_path }}/torrserver'
   restart_policy: '{{ docker_restart_policy }}'
   network_mode: '{{ docker_network_mode }}'

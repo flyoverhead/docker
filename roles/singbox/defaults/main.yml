@@ -6,7 +6,7 @@
 singbox_docker_config:
   name: sing-box
   image: ghcr.io/sagernet/sing-box
-  tag: v1.13.19
+  tag: v1.13.21
   path: '{{ docker_path }}/sing-box'
   restart_policy: '{{ docker_restart_policy }}'
   # deliberately not '{{ docker_network_mode }}': a REALITY server behind a
