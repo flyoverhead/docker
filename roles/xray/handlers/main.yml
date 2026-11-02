@@ -1,16 +1,5 @@
 ---
 
-- name: xray | kill container
-  become: true
-  community.docker.docker_compose_v2:
-    project_src: '{{ xray_docker_config.path }}'
-    remove_images: local
-    state: absent
-    wait: true
-    wait_timeout: 60
-  when:
-    - not (ansible_check_mode and not (xray_container_exists | default(true)))
-
 - name: xray | start container
   become: true
   community.docker.docker_compose_v2:
@@ -21,9 +10,28 @@
   when:
     - not (ansible_check_mode and not (xray_container_exists | default(true)))
 
+# An image or compose change needs `docker compose up` -- `restart` would keep
+# running the old image forever. `pull: always` fetches the image while the old
+# container still runs, so the outage is only the swap itself.
+# async: when the controller's SSH rides this same xray, stopping the container
+# cuts the session; detached, the recreate still finishes and only polling fails.
+- name: xray | recreate container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ xray_docker_config.path }}'
+    state: present
+    pull: always
+    recreate: always
+    wait: true
+    wait_timeout: 60
+  async: 300
+  poll: 5
+  when:
+    - not (ansible_check_mode and not (xray_container_exists | default(true)))
+
 # `state: present` with `recreate: always` rather than `state: restarted`: the
 # latter maps to `docker compose restart`, which leaves the old container -- and
-# therefore the old image and the old bind mounts -- in place.
+# therefore the old image and the old bind mounts -- in place. async as above.
 - name: xray | restart container
   become: true
   community.docker.docker_compose_v2:
@@ -32,5 +40,7 @@
     recreate: always
     wait: true
     wait_timeout: 60
+  async: 300
+  poll: 5
   when:
     - not (ansible_check_mode and not (xray_container_exists | default(true)))
