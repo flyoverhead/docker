@@ -2,6 +2,34 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.6.0
+
+### Changed
+
+- Image defaults moved to the current releases:
+
+  | Role | Old | New |
+  | --- | --- | --- |
+  | alertmanager | `v0.34.0` | `v0.34.2` |
+  | caddy | `2.11.4` | `2.11.7` |
+  | dnscrypt | `2.1.18` | `2.1.20` |
+  | grafana | `13.1.4` | `13.3.0` |
+  | pihole | `2026.07.2` | `2026.10.1` |
+  | prometheus | `v3.14.0` | `v3.15.1` |
+  | singbox | `v1.13.19` | `v1.13.21` |
+  | torrserver | `MatriX.143` | `MatriX.148` |
+  | xray | `26.7.28` | `26.10.31` |
+
+  `node_exporter` stays on `v1.12.1`, still the newest release.
+- **xray**: `26.10.31` is an upstream security release. It stops listening with
+  MPTCP, which Go 1.24+ enables by default and which a Linux kernel bug makes
+  remotely exploitable over IPv4. It also moves `golang.org/x/net` to v0.61.0.
+- **xray**: `xray_tuning_config` sets `net.mptcp.enabled: 0`, closing the same
+  hole for every process on the host. As with the other tuning keys, it only
+  applies when `xray_tuning_config.enabled` is true.
+- **singbox** stays on the 1.13 line. 1.14 changes undefined rule-set matching
+  and hijacks interface DNS by default, so the role's config needs review first.
+
 ## 2.5.0
 
 ### Added

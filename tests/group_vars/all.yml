@@ -7,23 +7,23 @@ ansible_password: vagrant
 # defaults/main.yml -- these exist so a test run can pin a different tag than
 # the role default without editing the role.
 # https://hub.docker.com/r/prom/alertmanager/tags
-alertmanager_version: v0.34.0
+alertmanager_version: v0.34.2
 # https://hub.docker.com/r/klutchell/dnscrypt-proxy/tags
-dnscrypt_version: 2.1.18
+dnscrypt_version: 2.1.20
 # https://hub.docker.com/r/grafana/grafana/tags
-grafana_version: 13.1.4
+grafana_version: 13.3.0
 # https://hub.docker.com/r/prom/node-exporter/tags
 node_exporter_version: v1.12.1
 # https://hub.docker.com/r/pihole/pihole/tags
-pihole_version: 2026.07.2
+pihole_version: 2026.10.1
 # https://hub.docker.com/r/prom/prometheus/tags
-prometheus_version: v3.14.0
+prometheus_version: v3.15.1
 # https://github.com/SagerNet/sing-box/tags
-singbox_version: v1.13.19
+singbox_version: v1.13.21
 # https://github.com/YouROK/TorrServer/pkgs/container/torrserver
-torrserver_version: MatriX.143
+torrserver_version: MatriX.148
 # https://hub.docker.com/r/teddysun/xray/tags
-xray_version: 26.7.28
+xray_version: 26.10.31
 
 telegram_bot_token: ''
 telegram_chat_id: ''
