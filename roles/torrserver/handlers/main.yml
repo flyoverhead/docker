@@ -23,3 +23,16 @@
     wait_timeout: 60
   when:
     - not (ansible_check_mode and not (torrserver_container_exists | default(true)))
+
+- name: torrserver | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ torrserver_container.container.Image }}'
+  register: torrserver_previous_image
+  failed_when:
+    - torrserver_previous_image is failed
+    - "'is being used' not in (torrserver_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (torrserver_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - torrserver_container.exists

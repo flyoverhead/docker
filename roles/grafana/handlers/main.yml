@@ -33,3 +33,16 @@
     wait_timeout: 60
   when:
     - not (ansible_check_mode and not (grafana_container_exists | default(true)))
+
+- name: grafana | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ grafana_container.container.Image }}'
+  register: grafana_previous_image
+  failed_when:
+    - grafana_previous_image is failed
+    - "'is being used' not in (grafana_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (grafana_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - grafana_container.exists

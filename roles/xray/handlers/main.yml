@@ -44,3 +44,16 @@
   poll: 5
   when:
     - not (ansible_check_mode and not (xray_container_exists | default(true)))
+
+- name: xray | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ xray_container.container.Image }}'
+  register: xray_previous_image
+  failed_when:
+    - xray_previous_image is failed
+    - "'is being used' not in (xray_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (xray_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - xray_container.exists

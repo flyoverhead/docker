@@ -9,5 +9,7 @@
     group: root
     mode: '0644'
     lstrip_blocks: true
+  changed_when: singbox_container_update
   notify:
     - sing-box | recreate container
+    - sing-box | remove previous image

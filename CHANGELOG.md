@@ -2,6 +2,31 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.8.0
+
+### Fixed
+
+- A container left on an old image is now recreated by the next run. Every
+  role's `detect` sets `<role>_container_update` when the running image does
+  not carry the configured tag, but `update` only notified `recreate container`
+  when the compose file changed. A run interrupted between writing the compose
+  file and running handlers left the file current and the container old, and
+  every later run reported `ok`. The compose task in `update` now reports
+  changed whenever `<role>_container_update` is true.
+
+### Added
+
+- Every role removes the image its container ran before an update, once
+  `recreate container` has replaced it (`remove previous image` handler). Only
+  that image ID is removed; one still used by another container or tagged in
+  another repository is kept, and the handler does not fail on it. Images
+  replaced before this release are not touched; `docker image prune -a`
+  reclaims them.
+
+### Changed
+
+- `community.docker` minimum is now `3.8.0` for `docker_image_remove`.
+
 ## 2.7.0
 
 ### Changed

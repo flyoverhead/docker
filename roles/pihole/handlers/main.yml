@@ -95,3 +95,16 @@
   community.docker.docker_container_exec:
     container: '{{ pihole_docker_config.name }}'
     command: pihole -g
+
+- name: pihole | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ pihole_container.container.Image }}'
+  register: pihole_previous_image
+  failed_when:
+    - pihole_previous_image is failed
+    - "'is being used' not in (pihole_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (pihole_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - pihole_container.exists

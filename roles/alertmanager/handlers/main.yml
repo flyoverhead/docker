@@ -33,3 +33,16 @@
     wait_timeout: 60
   when:
     - not (ansible_check_mode and not (alertmanager_container_exists | default(true)))
+
+- name: alertmanager | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ alertmanager_container.container.Image }}'
+  register: alertmanager_previous_image
+  failed_when:
+    - alertmanager_previous_image is failed
+    - "'is being used' not in (alertmanager_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (alertmanager_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - alertmanager_container.exists

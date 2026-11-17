@@ -35,3 +35,16 @@
     wait_timeout: 60
   when:
     - not (ansible_check_mode and not (caddy_container_exists | default(true)))
+
+- name: caddy | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ caddy_container.container.Image }}'
+  register: caddy_previous_image
+  failed_when:
+    - caddy_previous_image is failed
+    - "'is being used' not in (caddy_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (caddy_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - caddy_container.exists

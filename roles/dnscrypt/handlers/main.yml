@@ -35,3 +35,16 @@
     wait_timeout: 60
   when:
     - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))
+
+- name: dnscrypt | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ dnscrypt_container.container.Image }}'
+  register: dnscrypt_previous_image
+  failed_when:
+    - dnscrypt_previous_image is failed
+    - "'is being used' not in (dnscrypt_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (dnscrypt_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - dnscrypt_container.exists

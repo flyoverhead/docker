@@ -9,5 +9,7 @@
     group: root
     mode: '0644'
     lstrip_blocks: true
+  changed_when: node_exporter_container_update
   notify:
     - node-exporter | recreate container
+    - node-exporter | remove previous image

@@ -9,5 +9,7 @@
     group: root
     mode: '0644'
     lstrip_blocks: true
+  changed_when: dnscrypt_container_update
   notify:
     - dnscrypt | recreate container
+    - dnscrypt | remove previous image
