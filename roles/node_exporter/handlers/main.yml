@@ -23,3 +23,16 @@
     wait_timeout: 60
   when:
     - not (ansible_check_mode and not (node_exporter_container_exists | default(true)))
+
+- name: node-exporter | remove previous image
+  become: true
+  community.docker.docker_image_remove:
+    name: '{{ node_exporter_container.container.Image }}'
+  register: node_exporter_previous_image
+  failed_when:
+    - node_exporter_previous_image is failed
+    - "'is being used' not in (node_exporter_previous_image.msg | default(''))"
+    - "'referenced in multiple repositories' not in (node_exporter_previous_image.msg | default(''))"
+  when:
+    - not ansible_check_mode
+    - node_exporter_container.exists

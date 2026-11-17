@@ -9,5 +9,7 @@
     group: root
     mode: '0644'
     lstrip_blocks: true
+  changed_when: grafana_container_update
   notify:
     - grafana | recreate container
+    - grafana | remove previous image

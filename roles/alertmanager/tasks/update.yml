@@ -9,5 +9,7 @@
     group: root
     mode: '0644'
     lstrip_blocks: true
+  changed_when: alertmanager_container_update
   notify:
     - alertmanager | recreate container
+    - alertmanager | remove previous image
