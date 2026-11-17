@@ -19,20 +19,38 @@
     # matters: left alone it would activate avahi again on the first mDNS packet.
     - '"avahi-daemon.service" in ansible_facts.services'
 
+- name: config | dnscrypt blocklist folder
+  become: true
+  ansible.builtin.file:
+    path: '{{ dnscrypt_docker_config.path }}/blocklists'
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  register: dnscrypt_blocklist_folder
+  when:
+    - dnscrypt_service_config.blocked_names_url | default('') | length > 0
+
 - name: config | dnscrypt blocklist
   become: true
   ansible.builtin.get_url:
     url: '{{ dnscrypt_service_config.blocked_names_url }}'
-    dest: '{{ dnscrypt_docker_config.path }}/blocked-names.txt'
+    dest: '{{ dnscrypt_docker_config.path }}/blocklists/blocked-names.txt'
     owner: root
     group: root
     mode: '0644'
+  notify:
+    - dnscrypt | reload blocklist
   when:
     - dnscrypt_service_config.blocked_names_url | default('') | length > 0
-    # a check run never creates the service folder that get_url writes into
-    - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))
+    - not (ansible_check_mode and dnscrypt_blocklist_folder is changed)
 
-# cp keeps the bind-mounted inode; SIGHUP because the proxy's directory watcher never sees a single-file mount
+- name: config | dnscrypt legacy blocklist file
+  become: true
+  ansible.builtin.file:
+    path: '{{ dnscrypt_docker_config.path }}/blocked-names.txt'
+    state: absent
+
 - name: config | dnscrypt blocklist refresh job
   become: true
   ansible.builtin.cron:
@@ -40,13 +58,13 @@
     user: root
     special_time: weekly
     job: >-
-      curl -fsSL -o {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
+      curl -fsSL -o {{ dnscrypt_docker_config.path }}/blocklists/blocked-names.txt.tmp
       '{{ dnscrypt_service_config.blocked_names_url | default('') }}'
-      && test -s {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
-      && cp {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
-      {{ dnscrypt_docker_config.path }}/blocked-names.txt
+      && test -s {{ dnscrypt_docker_config.path }}/blocklists/blocked-names.txt.tmp
+      && mv -f {{ dnscrypt_docker_config.path }}/blocklists/blocked-names.txt.tmp
+      {{ dnscrypt_docker_config.path }}/blocklists/blocked-names.txt
       && docker kill --signal HUP {{ dnscrypt_docker_config.name }};
-      rm -f {{ dnscrypt_docker_config.path }}/blocked-names.txt.tmp
+      rm -f {{ dnscrypt_docker_config.path }}/blocklists/blocked-names.txt.tmp
   when:
     - dnscrypt_service_config.blocked_names_url | default('') | length > 0
 
