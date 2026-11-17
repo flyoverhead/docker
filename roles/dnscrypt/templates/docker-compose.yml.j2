@@ -12,7 +12,7 @@ services:
       - {{ dnscrypt_docker_config.path }}/dnscrypt-proxy.toml:/config/dnscrypt-proxy.toml:ro
       - /etc/localtime:/etc/localtime:ro
 {% if dnscrypt_service_config.blocked_names_url | default('') | length > 0 %}
-      - {{ dnscrypt_docker_config.path }}/blocked-names.txt:/config/blocked-names.txt:ro
+      - {{ dnscrypt_docker_config.path }}/blocklists:/config/blocklists:ro
 {% endif %}
 {% if dnscrypt_docker_config.network_mode == 'bridge' %}
     ports:

@@ -536,7 +536,7 @@ format = 'tsv'
 ## Path to the file of blocking rules (absolute, or relative to the same directory as the config file)
 
 {% if dnscrypt_service_config.blocked_names_url | default('') | length > 0 %}
-blocked_names_file = 'blocked-names.txt'
+blocked_names_file = 'blocklists/blocked-names.txt'
 {% else %}
 # blocked_names_file = 'blocked-names.txt'
 {% endif %}

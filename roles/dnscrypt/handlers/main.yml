@@ -12,16 +12,6 @@
   when:
     - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))
 
-# `state: restarted` maps to `docker compose restart`: it reloads bind-mounted
-# configuration without touching the image. Use it for config changes only.
-- name: dnscrypt | restart container
-  become: true
-  community.docker.docker_compose_v2:
-    project_src: '{{ dnscrypt_docker_config.path }}'
-    state: restarted
-  when:
-    - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))
-
 # An image or compose change needs `docker compose up` -- `restart` would keep
 # running the old image forever. `pull: always` makes a moving tag resolve too.
 - name: dnscrypt | recreate container
@@ -48,3 +38,22 @@
   when:
     - not ansible_check_mode
     - dnscrypt_container.exists
+
+# `state: restarted` maps to `docker compose restart`: it reloads bind-mounted
+# configuration without touching the image. Use it for config changes only.
+- name: dnscrypt | restart container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: '{{ dnscrypt_docker_config.path }}'
+    state: restarted
+  when:
+    - not (ansible_check_mode and not (dnscrypt_container_exists | default(true)))
+
+- name: dnscrypt | reload blocklist
+  become: true
+  ansible.builtin.command:
+    cmd: docker kill --signal HUP {{ dnscrypt_docker_config.name }}
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - dnscrypt_container_exists | default(false)

@@ -2,6 +2,19 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.8.1
+
+### Fixed
+
+- **dnscrypt**: the running proxy kept an old blocklist forever once a run
+  downloaded a newer one. `get_url` replaces the file, and the single-file bind
+  mount kept pointing at the old inode, so the weekly refresh (which copied
+  into the new file) and its SIGHUP never reached the proxy either. The
+  blocklist now lives in `blocklists/`, mounted as a directory, and both the
+  role and the cron job reload the proxy with SIGHUP after replacing it. The
+  old top-level `blocked-names.txt` is removed and the container is recreated
+  once for the new mount.
+
 ## 2.8.0
 
 ### Fixed
