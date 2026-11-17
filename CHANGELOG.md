@@ -2,6 +2,31 @@
 
 All notable changes to `flyoverhead.docker`.
 
+## 2.7.0
+
+### Changed
+
+- Image defaults moved to the current releases:
+
+  | Role | Old | New |
+  | --- | --- | --- |
+  | alertmanager | `v0.34.2` | `v0.35.0` |
+  | caddy | `2.11.7` | `2.11.9` |
+  | grafana | `13.3.0` | `13.3.1` |
+  | pihole | `2026.10.1` | `2026.11.0` |
+  | prometheus | `v3.15.1` | `v3.16.0` |
+  | torrserver | `MatriX.148` | `MatriX.150` |
+  | xray | `26.10.31` | `26.11.9` |
+
+  `dnscrypt` `2.1.20` and `node_exporter` `v1.12.1` are still the newest.
+- **alertmanager**: `v0.35.0` removes `--enable-feature=auto-gomemlimit` (now
+  `--auto-gomemlimit`) and requires a `name` on every eventrecorder output. The
+  role sets neither.
+- **xray**: `26.11.9` makes the `chrome` fingerprint the Chrome 155+ hello and
+  moves `golang.org/x/net` to v0.62.0.
+- **singbox** stays on `v1.13.21`, the newest 1.13 release; the 1.14 review is
+  still open.
+
 ## 2.6.1
 
 ### Fixed

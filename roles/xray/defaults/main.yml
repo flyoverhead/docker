@@ -7,7 +7,7 @@
 xray_docker_config:
   name: xray
   image: teddysun/xray
-  tag: 26.10.31
+  tag: 26.11.9
   path: '{{ docker_path }}/xray'
   restart_policy: '{{ docker_restart_policy }}'
   # deliberately not '{{ docker_network_mode }}': a REALITY server behind a
